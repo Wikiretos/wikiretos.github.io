@@ -1,0 +1,864 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wikiretos — ¿cuántos saltos hay entre dos temas? Reto diario</title>
+<meta name="description" content="Juego diario gratis: conecta dos temas saltando de enlace en enlace en el menor número de saltos. Un reto nuevo cada día, igual para todos.">
+<meta property="og:title" content="Wikiretos — reto diario de conexiones"><meta property="og:description" content="¿Cuántos saltos hay entre dos temas? Un reto nuevo cada día. Compite con tus amigos."><meta property="og:type" content="website"><meta property="og:image" content="https://www.wikiretos.com/og.png"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Crect width='20' height='20' rx='5' fill='%233A4BE0'/%3E%3Ccircle cx='5' cy='15' r='2.2' fill='%23fff'/%3E%3Ccircle cx='15' cy='5' r='2.2' fill='%23FFB226'/%3E%3Cpath d='M5 15C7 8 9 8 10 10s4 3 5-5' stroke='%23fff' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>
+/* ===== CONFIGURACIÓN DE MONETIZACIÓN — rellena lo que uses; vacío = oculto ===== */
+const CFG={
+  DONATE_URL:"https://ko-fi.com/wikiretos",              // Ko-fi / Buy Me a Coffee, p.ej. "https://ko-fi.com/wikisalto"
+  PLUS_URL:"",                // página de pago de Wikiretos Plus (Ko-fi membresía, Lemon Squeezy, Gumroad…)
+  PLUS_PRICE:"$2/mes",        // texto mostrado
+  PLUS_HASHES:[],             // SHA-256 (hex) de los códigos Plus que vendes; generar: sha256("codigo")
+  FREE_HINTS_PER_DAY:1,       // pistas gratis en el reto diario
+  REWARDED_ADS:false,         // true = la pista gratis exige ver un anuncio (AdSense H5 Games, Ad Placement API)
+  ADSENSE_CLIENT:"",          // "ca-pub-XXXXXXXXXXXXXXXX"
+  ADSENSE_SLOT:"",            // id del bloque responsive
+  SPONSOR:null,               // {name:"Marca",url:"https://…",text:"El reto de hoy lo trae"} — reto patrocinado
+  ANALYTICS_DOMAIN:"",        // Plausible: dominio, p.ej. "wikisalto.com" (o usa GA_ID)
+  GA_ID:"G-G4C0N8S6JH",                   // "G-XXXXXXXXXX"
+  FIREBASE:null               // {apiKey:"",authDomain:"",projectId:""} → tabla de posiciones pública
+};
+</script>
+<style>body{margin:0}img{max-width:100%}</style>
+</head><body>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Azeret+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#F4F5F9; --bg-rgb:244,245,249; --surface:#FFFFFF; --surface2:#EDEFF6; --line:#D9DCE6; --ink:#171A24; --ink2:#5E6577; --body-ink:#2A2F3D;
+  --accent:#3A4BE0; --accent-rgb:58,75,224; --accent-soft:#E6E9FB; --accent-ink:#FFFFFF;
+  --goal:#E39A00; --goal-rgb:227,154,0; --goal-soft:#FFF0CC; --goal-ink:#231700;
+  --ok:#128A55; --bad:#C43E3C; --node:#7A88FF; --shadow:0 20px 50px rgba(20,25,60,.10);
+  --display:"Familjen Grotesk","Helvetica Neue",Arial,sans-serif; --body:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif; --mono:"Azeret Mono",ui-monospace,Menlo,monospace;
+}
+:root[data-theme="dark"]{
+  --bg:#0B0D14; --bg-rgb:11,13,20; --surface:#141724; --surface2:#1B1F2E; --line:#2A2F41; --ink:#F1F2F8; --ink2:#9AA1B6; --body-ink:#CDD1DF;
+  --accent:#7B8AFF; --accent-rgb:123,138,255; --accent-soft:#1F2547; --accent-ink:#0B0D14;
+  --goal:#FFB226; --goal-rgb:255,178,38; --goal-soft:#3A2A05; --goal-ink:#1A1000;
+  --ok:#3EDB9A; --bad:#FF6F6D; --node:#8E9BFF; --shadow:0 30px 70px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box}
+html{color-scheme:light}html[data-theme="dark"]{color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .3s,color .3s}
+canvas#net{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.glow{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(600px 400px at var(--mx,50%) var(--my,30%),rgba(var(--accent-rgb),.12),transparent 70%)}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+a{color:inherit}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.wrap{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:16px 18px 140px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 0 22px}
+.brand{font-family:var(--display);font-weight:700;font-size:21px;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+.brand .mark{width:32px;height:32px;border-radius:9px;background:var(--accent);display:grid;place-items:center;box-shadow:0 6px 18px rgba(var(--accent-rgb),.35)}
+.brand .mark svg{width:19px;height:19px}
+.hright{display:flex;align-items:center;gap:8px}
+.chip{border:1px solid var(--line);border-radius:999px;padding:5px 11px;background:var(--surface);font-family:var(--mono);font-size:12px;white-space:nowrap}
+.chip b{color:var(--goal);font-weight:500}
+.user{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:4px 10px 4px 4px;background:var(--surface);font-size:13px;font-weight:700;min-width:0}
+.user #userName{max-width:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:440px){.user #userName{display:none}.user{padding:4px}}
+.user .av{width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--goal));display:grid;place-items:center;color:#fff;font-size:11px;font-family:var(--mono)}
+.user:hover{border-color:var(--accent)}
+.tbtn{width:34px;height:34px;border:1px solid var(--line);border-radius:999px;background:var(--surface);display:grid;place-items:center}
+.tbtn svg{width:16px;height:16px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2)}
+h1,h2,h3{font-family:var(--display);letter-spacing:-.02em;text-wrap:balance;margin:0;font-weight:700}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow)}
+/* intro */
+.hero{padding:24px 26px 26px}
+.hero h1{font-size:clamp(28px,5vw,40px);line-height:1.12;margin-top:12px}
+.hero .o{color:var(--accent)}.hero .d{color:var(--goal)}
+.lede{color:var(--body-ink);max-width:56ch;font-size:16px;margin:16px 0 0}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:20px}
+.step{background:var(--surface2);border-radius:14px;padding:12px 14px;font-size:14px;line-height:1.4}
+.step .ic{width:28px;height:28px;border-radius:8px;background:var(--surface);display:grid;place-items:center;margin-bottom:8px;border:1px solid var(--line)}
+.step .ic svg{width:15px;height:15px}
+.step b{display:block;font-family:var(--display);font-size:15px;margin-bottom:2px}
+@media(max-width:560px){.steps{grid-template-columns:1fr}.goalbox .name{font-size:14px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.1}.goalbox .arr{font-size:16px}.counters{font-size:12px}.counters .c{padding:4px 7px}}
+.cta{display:flex;align-items:center;gap:12px;margin-top:22px;flex-wrap:wrap}
+.btn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;padding:12px 20px;font-weight:700;font-size:15px;background:var(--accent);color:var(--accent-ink);box-shadow:0 8px 24px rgba(var(--accent-rgb),.3);transition:transform .15s,box-shadow .15s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(var(--accent-rgb),.4)}
+.btn:active{transform:scale(.97)}
+.btn.ghost{background:var(--surface);border:1px solid var(--line);box-shadow:none;color:var(--ink)}
+.btn.ghost:hover{border-color:var(--accent);box-shadow:none}
+.btn.sm{padding:8px 14px;font-size:14px;border-radius:10px}
+.btn svg{width:16px;height:16px}
+.daily{margin-top:20px;padding-top:16px;border-top:1px dashed var(--line);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:14px;color:var(--ink2)}
+.daily .cd{font-family:var(--mono);color:var(--ink);font-variant-numeric:tabular-nums}
+.kpis{display:flex;gap:24px;margin-top:18px;flex-wrap:wrap}
+.kpi .n{font-family:var(--display);font-size:26px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.kpi .l{font-size:11px;color:var(--ink2);margin-top:4px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase}
+/* play */
+.rail{position:sticky;top:0;z-index:5;padding:10px 0 12px;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;background:linear-gradient(rgb(var(--bg-rgb)) 70%,transparent)}
+.goalbox{display:flex;align-items:center;gap:10px;min-width:0}
+.goalbox .st{display:flex;flex-direction:column;min-width:0}
+.goalbox .lab{font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:var(--accent)}
+.goalbox .lab.g{color:var(--goal)}
+.goalbox .name{font-family:var(--display);font-weight:700;font-size:17px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.goalbox .name.g{color:var(--goal)}
+.goalbox .arr{font-size:20px;color:var(--ink2)}
+.counters{display:flex;gap:6px;font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums}
+.counters .c{white-space:nowrap;border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:5px 10px}
+.counters .c.bump{animation:bump .35s}
+@keyframes bump{30%{transform:scale(1.18);color:var(--goal)}}
+.stage{perspective:1400px}
+.article{padding:26px 26px 24px;transform-origin:50% 40%}
+.article.in{animation:cardIn .45s cubic-bezier(.2,.8,.2,1)}
+.article.out{animation:cardOut .26s ease-in forwards}
+@keyframes cardIn{from{opacity:0;transform:translateY(34px) rotateX(7deg) scale(.97)}to{opacity:1;transform:none}}
+@keyframes cardOut{to{opacity:0;transform:translateY(-26px) scale(.95)}}
+.article h1{font-size:clamp(26px,4.6vw,34px);line-height:1.1;margin:8px 0 10px}
+.article p.sum{font-size:16px;max-width:60ch;margin:0 0 22px;color:var(--body-ink)}
+.links{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.lnk{position:relative;text-align:left;border:1px solid var(--line);background:var(--surface2);border-radius:12px;padding:11px 13px;font-weight:700;font-size:15px;display:flex;flex-direction:column;gap:3px;transition:transform .18s cubic-bezier(.2,.8,.2,1),border-color .18s,box-shadow .18s;overflow:hidden}
+.lnk::after{content:"";position:absolute;inset:0;background:radial-gradient(120px 80px at var(--px,50%) var(--py,50%),rgba(var(--accent-rgb),.18),transparent 70%);opacity:0;transition:opacity .2s}
+.lnk:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:0 10px 24px rgba(var(--accent-rgb),.18)}
+.lnk:hover::after{opacity:1}
+.lnk:active{transform:scale(.96)}
+.lnk .k{font-family:var(--mono);font-size:10px;color:var(--ink2);letter-spacing:.1em;font-weight:400}
+.lnk.seen{opacity:.55}
+.lnk.goal{background:var(--goal);color:var(--goal-ink);border-color:transparent;animation:goalPulse 1.6s infinite}
+.lnk.goal .k{color:rgba(0,0,0,.6)}
+@keyframes goalPulse{0%,100%{box-shadow:0 0 0 0 rgba(var(--goal-rgb),.5)}60%{box-shadow:0 0 0 14px rgba(var(--goal-rgb),0)}}
+.give{color:var(--ink2);font-size:13px;padding:8px 12px;border-radius:8px}.give:hover{color:var(--bad)}
+.trail-in{cursor:grab}.trail svg .stn{cursor:pointer}.trail svg .stn:hover circle{stroke-width:3.5}
+/* trail */
+.trail{position:fixed;left:0;right:0;bottom:0;z-index:6;padding:12px 16px 16px;background:linear-gradient(transparent,rgba(var(--bg-rgb),.92) 35%)}
+.trail-in{max-width:760px;margin:0 auto;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:10px 14px;overflow-x:auto;scrollbar-width:none;box-shadow:var(--shadow)}
+.trail-in::-webkit-scrollbar{display:none}
+.trail svg{display:block;height:58px}
+/* result */
+.result{text-align:center;padding:22px 20px 6px}
+.result .big{font-family:var(--display);font-weight:700;font-size:clamp(30px,6vw,44px);line-height:1;letter-spacing:-.03em}
+.result .sub{color:var(--ink2);margin-top:8px;font-size:16px}
+.result .sub.opt{color:var(--ok);font-weight:700}
+.map{margin:16px 0 0}.map svg{width:100%;display:block}
+.cdbig{margin:16px 20px 0;padding:14px;border-radius:14px;background:var(--surface2);display:flex;flex-direction:column;align-items:center;gap:4px}
+.cdbig .cd{font-family:var(--mono);font-size:28px;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums}
+.sec{margin:22px 0 8px;display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.sec small{color:var(--ink2);font-size:12px}
+.path{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:14px}
+.path a.p{text-decoration:none;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:4px 10px;display:inline-flex;align-items:center;gap:5px;transition:border-color .15s}
+.path a.p:hover{border-color:var(--accent);color:var(--accent)}
+.path a.p svg{width:11px;height:11px;opacity:.6}
+.path .p.o{border-color:var(--accent);color:var(--accent)}.path .p.d{background:var(--goal);color:var(--goal-ink);border-color:var(--goal);font-weight:700}
+.path .a{color:var(--ink2);font-family:var(--mono)}
+.share{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:18px 0 6px}
+.sbtn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 13px;font-size:14px;font-weight:700;transition:transform .15s,border-color .15s}
+.sbtn:hover{transform:translateY(-2px);border-color:var(--accent)}
+.sbtn svg{width:16px;height:16px}
+.sbtn.wa:hover{border-color:#25D366;color:#1DA851}
+.board{margin-top:22px;overflow:hidden}
+.board .bh{padding:16px 18px 0;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.tabs{display:flex;border-bottom:1px solid var(--line);margin-top:10px}
+.tabs button{flex:1;padding:12px;font-weight:700;color:var(--ink2);position:relative;font-size:14px}
+.tabs button.on{color:var(--ink)}
+.tabs button.on::after{content:"";position:absolute;left:25%;right:25%;bottom:-1px;height:2px;background:var(--accent);border-radius:2px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+td,th{padding:10px 16px;text-align:left;border-top:1px solid var(--line);font-size:14px}
+th{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);border-top:0;font-weight:400}
+td.n{font-family:var(--mono);color:var(--ink2);width:44px}
+td.v{font-family:var(--mono);text-align:right}
+td .medal{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;font-size:11px;font-family:var(--mono);color:#fff;background:var(--ink2)}
+tr:nth-child(1) td .medal{background:var(--goal);color:var(--goal-ink)}tr:nth-child(2) td .medal{background:#9AA3B5}tr:nth-child(3) td .medal{background:#B9865A}
+tr.me td{background:var(--accent-soft)}
+tr.ex td{opacity:.55;font-style:italic}
+.empty{padding:20px;color:var(--ink2);text-align:center;font-size:14px}
+.note{color:var(--ink2);font-size:13px;text-align:center;margin-top:10px}
+.regbox{margin-top:14px;padding:14px 18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--accent-soft);border-radius:14px;font-size:14px}
+.regbox input{font:inherit;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);width:180px}
+.regbox .grow{flex:1;min-width:200px}
+.toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%) translateY(10px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;font-weight:700;opacity:0;pointer-events:none;transition:.25s;z-index:9}
+.toast.show{opacity:1;transform:translateX(-50%)}
+/* modal */
+.modal{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:rgba(0,0,0,.45);padding:20px}
+.modal .box{max-width:400px;width:100%;padding:22px}
+.modal h3{font-size:20px}
+.modal p{color:var(--ink2);font-size:14px;margin:8px 0 14px}
+.modal input{font:inherit;width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface2);color:var(--ink);margin-bottom:12px}
+[hidden]{display:none!important}
+.mono{margin:18px 0 0;display:flex;gap:10px;flex-wrap:wrap;justify-content:center;align-items:center}
+.kofi{display:inline-flex;align-items:center;gap:8px;border-radius:12px;padding:10px 16px;font-weight:700;font-size:14px;background:var(--goal);color:var(--goal-ink);text-decoration:none;box-shadow:0 8px 20px rgba(var(--goal-rgb),.3)}
+.kofi:hover{transform:translateY(-2px)}
+.plusbox{margin-top:14px;padding:14px 18px;border-radius:14px;background:var(--goal-soft);color:var(--goal-ink);font-size:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+:root[data-theme="dark"] .plusbox{color:var(--ink)}
+.plusbox .grow{flex:1;min-width:200px}
+.adbox{margin:18px 0 0;min-height:90px;display:grid;place-items:center;border:1px dashed var(--line);border-radius:14px;overflow:hidden}
+.adbox:empty{display:none}
+.sponsor{font-size:13px;color:var(--ink2);margin-top:10px}.sponsor a{font-weight:700;color:var(--ink)}
+.give.plus{color:var(--goal);font-weight:700}
+footer{position:relative;z-index:1;text-align:center;font-size:12px;color:var(--ink2);padding:0 18px 30px}footer a{margin:0 6px}
+@media(max-width:560px){.goalbox .name{font-size:14px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.1;word-break:break-word}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<canvas id="net"></canvas><div class="glow"></div>
+<div class="wrap">
+  <header>
+    <div class="brand"><span class="mark"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="4" cy="16" r="2.4" fill="#fff"/><circle cx="16" cy="4" r="2.4" fill="#FFB226"/><path d="M4 16C6 7 9 7 10 10s4 4 6-6" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></span>Wikiretos</div>
+    <div class="hright">
+      <span class="chip">racha <b id="streak">0</b></span>
+      <button class="user" id="userBtn" title="Cambiar nombre"><span class="av" id="av">?</span><span id="userName">…</span></button>
+      <button class="tbtn" id="themeBtn" title="Cambiar tema"><svg id="tIco" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    </div>
+  </header>
+
+  <section id="intro">
+    <div class="card hero">
+      <div class="eyebrow">Reto <span id="dayNum">1</span> · <span id="dateLbl"></span></div>
+      <h1>¿Cuántos saltos hay entre <span class="o" id="iO"></span> y <span class="d" id="iD"></span>?</h1>
+      <div class="sponsor" id="sponsor" hidden></div>
+      <p class="lede">Un juego de conexiones. Te damos un punto de partida y una meta. Tu misión: encontrar el camino que los une, saltando de palabra en palabra.</p>
+      <div class="steps">
+        <div class="step"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg></div><b>Empiezas en la salida</b>Cada tarjeta muestra un tema y una lista de temas relacionados.</div>
+        <div class="step"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 18c3-12 8-12 10-6s5 5 6-8"/></svg></div><b>Saltas tocando uno</b>Al tocarlo, pasas a ese tema y ves sus propias conexiones. Así vas armando tu ruta.</div>
+        <div class="step"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 21V4l14 5-14 5"/></svg></div><b>Llegas a la meta</b>Gana quien llega en menos saltos y menos tiempo. Compite con todos en la tabla del día.</div>
+      </div>
+      <div class="cta"><button class="btn" id="startBtn">Empezar a saltar →</button><button class="btn ghost" id="freeBtn">Practicar (modo libre)</button><button class="btn ghost sm" id="inviteBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M12 15V3m0 0L8 7m4-4 4 4"/></svg>Invitar</button></div>
+      <div class="daily" id="yday" hidden style="display:block"><span class="eyebrow">Ayer · reto <span id="ydN"></span></span><div class="path" id="ydPath" style="margin-top:8px"></div></div>
+      <div class="daily"><span>Hay <b>un reto nuevo cada día</b>, igual para todo el mundo.</span><span>Próximo reto en <span class="cd" id="cdIntro">--:--:--</span></span></div>
+      <div class="kpis">
+        <div class="kpi"><div class="n" id="sPlayed">0</div><div class="l">retos jugados</div></div>
+        <div class="kpi"><div class="n" id="sBest">–</div><div class="l">mejor marca</div></div>
+        <div class="kpi"><div class="n" id="sAvg">–</div><div class="l">promedio de saltos</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="play" hidden>
+    <div class="rail">
+      <div class="goalbox"><span class="st cur"><span class="lab">ESTÁS EN</span><span class="name" id="curName"></span></span><span class="arr">→</span><span class="st"><span class="lab g">META</span><span class="name g" id="goalName"></span></span></div>
+      <div class="counters"><span class="c" id="cHops">0 saltos</span><span class="c" id="cTime">0:00</span></div>
+    </div>
+    <div class="stage"><article class="card article in" id="art"></article></div>
+    <div style="display:flex;justify-content:center;margin-top:14px"><button class="give" id="hintBtn">💡 Pista</button><button class="give" id="giveUp">Rendirse</button></div>
+  </section>
+
+  <section id="done" hidden>
+    <div class="card" style="padding-bottom:22px">
+      <div class="result">
+        <div class="eyebrow" id="rEyebrow">Wikiretos</div>
+        <div class="big" id="rBig"></div>
+        <div class="sub" id="rSub"></div>
+      </div>
+      <div class="map"><svg id="rMap" viewBox="0 0 700 180" preserveAspectRatio="xMidYMid meet"></svg></div>
+      <div class="share" id="shareRow"></div>
+      <div class="mono" id="donate" hidden></div>
+      <div class="cdbig" id="cdDoneWrap"><span class="eyebrow">Próximo reto en</span><span class="cd" id="cdDone">--:--:--</span></div>
+    </div>
+    <div class="sec"><h3>Tu ruta</h3></div>
+    <div class="path" id="rPath"></div>
+    <div id="bestWrap"><div class="sec"><h3>Ruta más corta posible</h3><small id="bestLbl"></small></div>
+    <div class="path" id="rBest"></div></div>
+    <div class="adbox" id="ad"></div>
+    <div class="plusbox" id="plusbox" hidden><span class="grow">⭐ <b>Wikiretos Plus</b>: pistas ilimitadas, modo libre sin límite y sin anuncios. <span id="plusPrice"></span></span><a class="btn sm" id="plusBtn" target="_blank" rel="noopener">Quiero Plus</a><button class="btn ghost sm" id="plusCodeBtn">Tengo un código</button></div>
+    <div class="card board" id="board">
+      <div class="bh"><h3 id="bTitle"></h3><small id="bCount" style="color:var(--ink2);font-size:12px"></small></div>
+      <div class="tabs"><button class="on" data-t="day">Reto de hoy</button><button data-t="all">General</button></div>
+      <div id="boardBody"><div class="empty">Cargando tabla…</div></div>
+    </div>
+    <div class="regbox" id="regbox"><span class="grow">Juegas como <b id="tmpName"></b>, un nombre temporal. Regístrate para guardar tu racha y aparecer con tu nombre.</span><button class="btn sm" id="regBtn">Registrarme</button></div>
+    <div class="note" id="boardNote"></div><div class="note">Se ordena por saltos; el tiempo solo desempata.</div>
+    <div class="row" style="display:flex;justify-content:center;margin-top:18px"><button class="btn ghost" id="againBtn">Practicar con otro reto (libre)</button></div>
+  </section>
+</div>
+
+<footer><span id="ftDonate"></span><a href="#" id="ftPlus" hidden>Wikiretos Plus</a><a href="#" id="ftPriv">Privacidad</a></footer>
+<div class="trail" id="trail" hidden><div class="trail-in"><svg id="trailSvg"></svg></div></div>
+<div class="toast" id="toast"></div>
+<div id="newDay" hidden style="position:fixed;top:0;left:0;right:0;z-index:30;background:var(--goal);color:var(--goal-ink);text-align:center;padding:10px;font-weight:700;cursor:pointer" onclick="location.reload()">Hay un reto nuevo · toca para cargarlo</div>
+<div class="modal" id="modal" hidden><div class="card box"><h3>Elige tu nombre</h3><p>Así aparecerás en la tabla de cada reto. Puedes cambiarlo cuando quieras.</p><input id="nameIn" maxlength="18" placeholder="Tu nombre"><p style="margin:0 0 10px">Tu código de recuperación: <b id="myCode" style="font-family:var(--mono);color:var(--ink)"></b><br>Guárdalo para recuperar tu nombre y racha en otro dispositivo.</p><input id="codeIn" maxlength="8" placeholder="¿Tienes un código? Pégalo aquí" style="margin-bottom:12px"><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn ghost sm" id="mCancel">Cancelar</button><button class="btn sm" id="mSave">Guardar</button></div></div></div>
+
+<div class="modal" id="plusModal" hidden><div class="card box"><h3>Activar Wikiretos Plus</h3><p>Pega el código que recibiste al comprar. Queda guardado en este dispositivo.</p><input id="plusIn" maxlength="24" placeholder="Código Plus"><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn ghost sm" id="pmCancel">Cancelar</button><button class="btn sm" id="pmSave">Activar</button></div></div></div>
+
+<script>
+// Grafo curado de Wikiretos. Resúmenes propios (no copiados de Wikipedia).
+const G = {
+shakira:{t:"Shakira",c:"Personas",s:"Cantante colombiana nacida en Barranquilla; mezcla pop, rock y ritmos latinos y árabes, y es una de las artistas más vendidas del mundo.",l:["colombia","barranquilla","musica","futbol","libano","pop"]},
+colombia:{t:"Colombia",c:"Lugares",s:"País del noroeste de Sudamérica con costas en dos océanos, capital Bogotá; famoso por su café, su biodiversidad y su música.",l:["bogota","barranquilla","cafe","amazonas","futbol","gabo","andes","espanol","oceano_pacifico"]},
+barranquilla:{t:"Barranquilla",c:"Lugares",s:"Ciudad portuaria del Caribe colombiano, sede de un carnaval enorme y cuna de Shakira.",l:["colombia","carnaval","shakira","mar_caribe"]},
+bogota:{t:"Bogotá",c:"Lugares",s:"Capital de Colombia, a 2.600 metros de altura sobre una sabana de los Andes.",l:["colombia","andes","ciudad","museo_del_oro"]},
+cafe:{t:"Café",c:"Comida",s:"Bebida preparada con semillas tostadas del cafeto; originaria de Etiopía y hoy la infusión más consumida tras el té.",l:["colombia","etiopia","brasil","planta","cafeina","desayuno"]},
+cafeina:{t:"Cafeína",c:"Ciencia",s:"Alcaloide estimulante presente en el café, el té y el cacao; la droga psicoactiva más usada del planeta.",l:["cafe","te","quimica","cerebro","chocolate"]},
+te:{t:"Té",c:"Comida",s:"Infusión de hojas de Camellia sinensis, originada en China y expandida por el mundo gracias al comercio.",l:["china","cafeina","planta","reino_unido","agua"]},
+musica:{t:"Música",c:"Cultura",s:"Arte de combinar sonidos y silencios en el tiempo; presente en todas las culturas humanas conocidas.",l:["pop","rock","guitarra","piano","sonido","mozart","reggaeton","cerebro","matematicas"]},
+pop:{t:"Música pop",c:"Cultura",s:"Género de canciones breves y pegadizas pensadas para un público masivo, nacido a mediados del siglo XX.",l:["musica","shakira","michael_jackson","radio","rock"]},
+rock:{t:"Rock",c:"Cultura",s:"Género surgido en los años 50 en Estados Unidos con guitarra eléctrica como protagonista.",l:["musica","guitarra","estados_unidos","beatles","electricidad"]},
+reggaeton:{t:"Reguetón",c:"Cultura",s:"Género urbano nacido en Puerto Rico y Panamá a partir del dancehall y el hip hop, hoy dominante en el pop latino.",l:["musica","puerto_rico","panama","espanol","bad_bunny"]},
+bad_bunny:{t:"Bad Bunny",c:"Personas",s:"Artista puertorriqueño que llevó el reguetón y el trap latino a lo más alto de las listas globales.",l:["reggaeton","puerto_rico","espanol","futbol"]},
+guitarra:{t:"Guitarra",c:"Objetos",s:"Instrumento de cuerdas pulsadas con caja de resonancia; la versión eléctrica cambió la música del siglo XX.",l:["musica","rock","madera","espana","electricidad","sonido"]},
+piano:{t:"Piano",c:"Objetos",s:"Instrumento de teclado en el que martillos golpean cuerdas; inventado en Italia hacia 1700.",l:["musica","italia","mozart","madera","sonido"]},
+mozart:{t:"Wolfgang Amadeus Mozart",c:"Personas",s:"Compositor austríaco del siglo XVIII, niño prodigio y autor de más de 600 obras.",l:["musica","piano","austria","viena"]},
+beatles:{t:"The Beatles",c:"Cultura",s:"Banda de Liverpool que redefinió la música popular en los años 60.",l:["rock","reino_unido","guitarra","radio","television"]},
+michael_jackson:{t:"Michael Jackson",c:"Personas",s:"Cantante y bailarín estadounidense, llamado el Rey del Pop; su álbum Thriller es el más vendido de la historia.",l:["pop","estados_unidos","television","baile"]},
+baile:{t:"Baile",c:"Cultura",s:"Movimiento del cuerpo al ritmo de la música, presente en rituales, fiestas y escenarios de todo el mundo.",l:["musica","carnaval","cuerpo_humano","michael_jackson","tango"]},
+tango:{t:"Tango",c:"Cultura",s:"Música y baile nacidos en el Río de la Plata a fines del siglo XIX, patrimonio inmaterial de la humanidad.",l:["baile","argentina","buenos_aires","musica"]},
+carnaval:{t:"Carnaval",c:"Cultura",s:"Fiesta popular previa a la Cuaresma con desfiles, disfraces y música; los de Río y Barranquilla están entre los mayores.",l:["barranquilla","rio_de_janeiro","baile","catolicismo","mascara"]},
+mascara:{t:"Máscara",c:"Objetos",s:"Objeto que cubre el rostro para ritual, teatro, fiesta o protección.",l:["carnaval","teatro","medicina","rostro"]},
+rostro:{t:"Rostro",c:"Cuerpo",s:"Parte frontal de la cabeza humana; clave para la identidad y la expresión de emociones.",l:["cuerpo_humano","ojo","cerebro","mascara","fotografia"]},
+futbol:{t:"Fútbol",c:"Deporte",s:"Deporte de equipo más popular del mundo: once contra once, un balón y dos porterías.",l:["mundial_futbol","messi","brasil","argentina","reino_unido","balon","estadio"]},
+mundial_futbol:{t:"Copa Mundial de Fútbol",c:"Deporte",s:"Torneo de selecciones que se juega cada cuatro años desde 1930 y es el evento deportivo más visto del planeta.",l:["futbol","brasil","argentina","television","messi","uruguay"]},
+messi:{t:"Lionel Messi",c:"Personas",s:"Futbolista argentino, campeón del mundo en 2022 y considerado uno de los mejores de la historia.",l:["futbol","argentina","barcelona","mundial_futbol"]},
+balon:{t:"Balón",c:"Objetos",s:"Esfera inflable usada en decenas de deportes; los primeros se hacían con vejigas de animal.",l:["futbol","esfera","caucho","baloncesto"]},
+baloncesto:{t:"Baloncesto",c:"Deporte",s:"Deporte inventado en 1891 en Estados Unidos por un profesor que buscaba un juego para el invierno.",l:["balon","estados_unidos","invierno","estadio"]},
+estadio:{t:"Estadio",c:"Lugares",s:"Recinto con gradas para eventos deportivos y conciertos; los romanos ya construían anfiteatros para miles.",l:["futbol","roma_antigua","arquitectura","musica","baloncesto"]},
+brasil:{t:"Brasil",c:"Lugares",s:"País más grande de Sudamérica, de habla portuguesa, con la mayor parte de la selva amazónica.",l:["amazonas","rio_de_janeiro","futbol","cafe","carnaval","oceano_atlantico"]},
+rio_de_janeiro:{t:"Río de Janeiro",c:"Lugares",s:"Ciudad brasileña famosa por sus playas, el Cristo Redentor y su carnaval.",l:["brasil","carnaval","playa","oceano_atlantico"]},
+argentina:{t:"Argentina",c:"Lugares",s:"País del cono sur, de vastas pampas y Patagonia; tierra del tango, el asado y el fútbol.",l:["buenos_aires","tango","messi","futbol","andes","carne","espanol"]},
+buenos_aires:{t:"Buenos Aires",c:"Lugares",s:"Capital argentina a orillas del Río de la Plata, con arquitectura europea y cafés históricos.",l:["argentina","tango","cafe","ciudad"]},
+uruguay:{t:"Uruguay",c:"Lugares",s:"Pequeño país sudamericano que ganó el primer Mundial de fútbol en 1930.",l:["mundial_futbol","argentina","brasil","carne"]},
+carne:{t:"Carne",c:"Comida",s:"Tejido muscular animal usado como alimento; su producción es una de las mayores fuentes de gases de efecto invernadero.",l:["vaca","argentina","fuego","proteina","cambio_climatico"]},
+vaca:{t:"Vaca",c:"Naturaleza",s:"Bovino doméstico criado por su leche, carne y cuero desde hace unos 10.000 años.",l:["carne","leche","mamifero","agricultura","metano"]},
+leche:{t:"Leche",c:"Comida",s:"Líquido producido por las hembras de los mamíferos para alimentar a sus crías; base del queso y el yogur.",l:["vaca","mamifero","queso","calcio"]},
+queso:{t:"Queso",c:"Comida",s:"Alimento obtenido al cuajar la leche; existen miles de variedades, muchas con siglos de historia.",l:["leche","bacteria","francia","italia","pizza"]},
+pizza:{t:"Pizza",c:"Comida",s:"Masa horneada con tomate y queso, nacida en Nápoles y convertida en la comida más global.",l:["italia","queso","tomate","pan","horno"]},
+tomate:{t:"Tomate",c:"Comida",s:"Fruto originario de los Andes, llevado a Europa en el siglo XVI y hoy base de la cocina italiana.",l:["andes","planta","pizza","mexico","espana"]},
+pan:{t:"Pan",c:"Comida",s:"Alimento de harina, agua y levadura horneado; uno de los inventos más antiguos de la humanidad.",l:["trigo","horno","levadura","desayuno","egipto_antiguo"]},
+horno:{t:"Horno",c:"Objetos",s:"Cámara cerrada que concentra calor para cocinar, fundir o cocer cerámica.",l:["fuego","pan","pizza","hierro","ceramica"]},
+fuego:{t:"Fuego",c:"Ciencia",s:"Reacción de combustión que produce luz y calor; su dominio transformó la dieta y la vida humana.",l:["oxigeno","calor","horno","carbon","volcan","quimica"]},
+desayuno:{t:"Desayuno",c:"Comida",s:"Primera comida del día; varía desde café con pan hasta arroz o pescado según la cultura.",l:["cafe","pan","huevo","te","chocolate"]},
+huevo:{t:"Huevo",c:"Comida",s:"Estructura que protege el embrión de aves y reptiles; el de gallina es un alimento universal.",l:["gallina","proteina","desayuno","dinosaurio"]},
+gallina:{t:"Gallina",c:"Naturaleza",s:"Ave doméstica más numerosa del mundo, descendiente del gallo salvaje del sudeste asiático.",l:["huevo","ave","agricultura","dinosaurio"]},
+ave:{t:"Ave",c:"Naturaleza",s:"Vertebrado con plumas y pico, descendiente directo de los dinosaurios terópodos.",l:["dinosaurio","gallina","pinguino","vuelo","huevo"]},
+pinguino:{t:"Pingüino",c:"Naturaleza",s:"Ave marina que no vuela pero nada con destreza; vive casi solo en el hemisferio sur.",l:["ave","antartida","oceano","hielo"]},
+dinosaurio:{t:"Dinosaurio",c:"Naturaleza",s:"Reptiles que dominaron la Tierra durante 165 millones de años hasta la extinción causada por un asteroide.",l:["ave","fosil","asteroide","extincion","mexico"]},
+asteroide:{t:"Asteroide",c:"Espacio",s:"Cuerpo rocoso que orbita el Sol; uno de unos 10 km acabó con los dinosaurios hace 66 millones de años.",l:["sistema_solar","dinosaurio","marte","meteorito","nasa"]},
+meteorito:{t:"Meteorito",c:"Espacio",s:"Fragmento de roca espacial que sobrevive al paso por la atmósfera y llega al suelo.",l:["asteroide","hierro","atmosfera","luna"]},
+fosil:{t:"Fósil",c:"Ciencia",s:"Resto o huella de un ser vivo antiguo conservado en roca.",l:["dinosaurio","evolucion","geologia","carbon"]},
+extincion:{t:"Extinción",c:"Ciencia",s:"Desaparición total de una especie; ha habido cinco grandes extinciones masivas y muchos temen una sexta.",l:["dinosaurio","evolucion","cambio_climatico","biodiversidad"]},
+evolucion:{t:"Evolución",c:"Ciencia",s:"Cambio de las especies a lo largo de generaciones por selección natural, explicado por Darwin.",l:["darwin","adn","fosil","extincion","biologia"]},
+darwin:{t:"Charles Darwin",c:"Personas",s:"Naturalista inglés que formuló la teoría de la evolución tras su viaje en el Beagle por Sudamérica y Galápagos.",l:["evolucion","reino_unido","galapagos","biologia"]},
+galapagos:{t:"Islas Galápagos",c:"Lugares",s:"Archipiélago volcánico ecuatoriano con especies únicas, como tortugas gigantes e iguanas marinas.",l:["ecuador","darwin","volcan","tortuga","oceano_pacifico"]},
+tortuga:{t:"Tortuga",c:"Naturaleza",s:"Reptil con caparazón; algunas viven más de 150 años.",l:["galapagos","reptil","oceano","huevo"]},
+reptil:{t:"Reptil",c:"Naturaleza",s:"Vertebrado de sangre fría con escamas: serpientes, lagartos, cocodrilos y tortugas.",l:["tortuga","dinosaurio","huevo","serpiente"]},
+serpiente:{t:"Serpiente",c:"Naturaleza",s:"Reptil sin patas; algunas especies inyectan veneno, otras asfixian a su presa.",l:["reptil","veneno","amazonas","medicina"]},
+veneno:{t:"Veneno",c:"Ciencia",s:"Sustancia que daña al organismo; muchos fármacos derivan de venenos animales.",l:["serpiente","quimica","medicina","planta"]},
+ecuador:{t:"Ecuador",c:"Lugares",s:"País andino atravesado por la línea ecuatorial; incluye las islas Galápagos.",l:["galapagos","andes","colombia","amazonas","volcan"]},
+andes:{t:"Cordillera de los Andes",c:"Lugares",s:"Cadena montañosa más larga del mundo, recorre siete países de Sudamérica.",l:["montana","colombia","ecuador","peru","argentina","volcan","tomate","papa"]},
+papa:{t:"Papa",c:"Comida",s:"Tubérculo domesticado en los Andes hace 8.000 años; hoy el cuarto cultivo más importante del mundo.",l:["andes","peru","planta","agricultura","irlanda"]},
+peru:{t:"Perú",c:"Lugares",s:"País andino, cuna del Imperio inca y hogar de Machu Picchu.",l:["andes","inca","machu_picchu","papa","amazonas","oceano_pacifico"]},
+inca:{t:"Imperio inca",c:"Historia",s:"Mayor imperio de la América precolombina, con capital en Cusco; cayó ante los españoles en el siglo XVI.",l:["peru","machu_picchu","espana","oro","andes"]},
+machu_picchu:{t:"Machu Picchu",c:"Lugares",s:"Ciudadela inca del siglo XV en lo alto de los Andes, redescubierta para el mundo en 1911.",l:["inca","peru","andes","arquitectura","piedra"]},
+piedra:{t:"Piedra",c:"Materiales",s:"Material sólido natural usado por los humanos para herramientas y construcción desde hace millones de años.",l:["geologia","arquitectura","machu_picchu","piramides","volcan"]},
+oro:{t:"Oro",c:"Materiales",s:"Metal precioso que no se oxida; movió imperios, conquistas y aún respalda economías.",l:["inca","museo_del_oro","metal","dinero","quimica"]},
+museo_del_oro:{t:"Museo del Oro",c:"Lugares",s:"Museo de Bogotá con la mayor colección de orfebrería prehispánica del mundo.",l:["bogota","oro","museo","inca"]},
+museo:{t:"Museo",c:"Cultura",s:"Institución que conserva y exhibe objetos de valor cultural o científico.",l:["museo_del_oro","louvre","arte","edad_media","fosil"]},
+louvre:{t:"Museo del Louvre",c:"Lugares",s:"Museo de París, antiguo palacio real y el más visitado del mundo; alberga la Mona Lisa.",l:["paris","museo","mona_lisa","arte","francia"]},
+mona_lisa:{t:"La Gioconda",c:"Cultura",s:"Retrato pintado por Leonardo da Vinci hacia 1503; el cuadro más famoso del planeta.",l:["leonardo","louvre","pintura","rostro"]},
+leonardo:{t:"Leonardo da Vinci",c:"Personas",s:"Pintor, inventor y anatomista del Renacimiento italiano; llenó cuadernos con máquinas y disecciones.",l:["mona_lisa","italia","pintura","anatomia","vuelo","renacimiento"]},
+renacimiento:{t:"Renacimiento",c:"Historia",s:"Movimiento cultural europeo de los siglos XIV a XVI que recuperó el arte y la ciencia clásicos.",l:["italia","leonardo","arte","imprenta","roma_antigua"]},
+pintura:{t:"Pintura",c:"Cultura",s:"Arte de aplicar pigmentos sobre una superficie; existe desde las cuevas prehistóricas.",l:["arte","mona_lisa","color","luz","picasso"]},
+picasso:{t:"Pablo Picasso",c:"Personas",s:"Pintor español, cofundador del cubismo y autor del Guernica.",l:["pintura","espana","paris","arte"]},
+arte:{t:"Arte",c:"Cultura",s:"Actividad humana que expresa ideas y emociones mediante formas, sonidos o palabras.",l:["pintura","musica","museo","teatro","fotografia","cine","literatura"]},
+teatro:{t:"Teatro",c:"Cultura",s:"Representación en vivo de historias ante un público; nació en la Grecia antigua.",l:["grecia_antigua","mascara","arte","shakespeare","cine"]},
+shakespeare:{t:"William Shakespeare",c:"Personas",s:"Dramaturgo inglés del siglo XVI, autor de Hamlet y Romeo y Julieta.",l:["teatro","reino_unido","literatura","ingles"]},
+literatura:{t:"Literatura",c:"Cultura",s:"Arte de la palabra escrita: novela, poesía, ensayo y teatro.",l:["libro","gabo","shakespeare","cervantes","arte","imprenta"]},
+gabo:{t:"Gabriel García Márquez",c:"Personas",s:"Escritor colombiano, Nobel de Literatura en 1982 y autor de Cien años de soledad.",l:["colombia","literatura","libro","periodismo","mexico"]},
+cervantes:{t:"Miguel de Cervantes",c:"Personas",s:"Escritor español del Siglo de Oro, autor de Don Quijote, considerada la primera novela moderna.",l:["literatura","espana","espanol","libro"]},
+libro:{t:"Libro",c:"Objetos",s:"Conjunto de hojas impresas o manuscritas encuadernadas; la imprenta lo hizo masivo.",l:["imprenta","papel","literatura","biblioteca","wikipedia"]},
+imprenta:{t:"Imprenta",c:"Tecnología",s:"Máquina de tipos móviles perfeccionada por Gutenberg hacia 1450; multiplicó los libros y las ideas.",l:["libro","papel","alemania","renacimiento","periodismo"]},
+papel:{t:"Papel",c:"Materiales",s:"Lámina de fibras vegetales inventada en China hace unos 2.000 años.",l:["china","libro","madera","imprenta","dinero"]},
+periodismo:{t:"Periodismo",c:"Cultura",s:"Oficio de investigar y contar hechos de interés público; se apoya en prensa, radio, televisión e internet.",l:["imprenta","radio","television","internet","gabo"]},
+biblioteca:{t:"Biblioteca",c:"Lugares",s:"Lugar que reúne y presta libros y documentos; la de Alejandría fue la más célebre de la Antigüedad.",l:["libro","egipto_antiguo","internet","wikipedia"]},
+wikipedia:{t:"Wikipedia",c:"Tecnología",s:"Enciclopedia colaborativa en línea creada en 2001, escrita por voluntarios en cientos de idiomas.",l:["internet","libro","biblioteca","enciclopedia","espanol"]},
+enciclopedia:{t:"Enciclopedia",c:"Cultura",s:"Obra que reúne el saber de forma ordenada; la Encyclopédie francesa fue símbolo de la Ilustración.",l:["wikipedia","libro","francia","conocimiento"]},
+conocimiento:{t:"Conocimiento",c:"Ideas",s:"Conjunto de información y comprensión adquirida por experiencia o aprendizaje.",l:["ciencia","filosofia","cerebro","enciclopedia","escuela"]},
+escuela:{t:"Escuela",c:"Cultura",s:"Institución donde se enseña a niños y jóvenes; obligatoria en casi todos los países.",l:["conocimiento","matematicas","libro","ninez","universidad"]},
+universidad:{t:"Universidad",c:"Cultura",s:"Centro de educación superior e investigación; las primeras surgieron en Bolonia y Oxford en la Edad Media.",l:["escuela","ciencia","edad_media","italia","reino_unido"]},
+ninez:{t:"Niñez",c:"Ideas",s:"Etapa de la vida entre el nacimiento y la adolescencia; su cerebro crece más rápido que nunca.",l:["cuerpo_humano","escuela","juego","cerebro"]},
+juego:{t:"Juego",c:"Cultura",s:"Actividad libre hecha por placer; base del deporte, los videojuegos y el aprendizaje infantil.",l:["ninez","videojuego","ajedrez","futbol","dado"]},
+videojuego:{t:"Videojuego",c:"Tecnología",s:"Juego electrónico interactivo; hoy mueve más dinero que el cine y la música juntos.",l:["juego","computadora","internet","japon","television"]},
+ajedrez:{t:"Ajedrez",c:"Cultura",s:"Juego de estrategia de origen indio con 64 casillas; las computadoras superaron al campeón humano en 1997.",l:["juego","india","inteligencia_artificial","matematicas"]},
+dado:{t:"Dado",c:"Objetos",s:"Cubo con caras numeradas usado en juegos de azar desde hace 5.000 años.",l:["juego","probabilidad","cubo","egipto_antiguo"]},
+probabilidad:{t:"Probabilidad",c:"Ciencia",s:"Rama de las matemáticas que mide la posibilidad de que ocurra algo; nació estudiando juegos de azar.",l:["matematicas","dado","casino","voto"]},
+casino:{t:"Casino",c:"Lugares",s:"Establecimiento de juegos de azar; Las Vegas y Macao son sus capitales.",l:["probabilidad","dinero","las_vegas","dado"]},
+las_vegas:{t:"Las Vegas",c:"Lugares",s:"Ciudad del desierto de Nevada convertida en capital mundial del juego y el espectáculo.",l:["casino","estados_unidos","desierto","electricidad"]},
+matematicas:{t:"Matemáticas",c:"Ciencia",s:"Ciencia de los números, las formas y las estructuras; lenguaje de la física y la computación.",l:["numero","geometria","probabilidad","fisica","computadora","musica","grecia_antigua"]},
+numero:{t:"Número",c:"Ciencia",s:"Concepto abstracto para contar y medir; el cero fue una invención tardía y revolucionaria.",l:["matematicas","cero","infinito","dinero"]},
+cero:{t:"Cero",c:"Ciencia",s:"Número que representa la nada; formalizado en India y llevado a Europa por los árabes.",l:["numero","india","matematicas","computadora"]},
+infinito:{t:"Infinito",c:"Ideas",s:"Lo que no tiene fin; en matemáticas hay infinitos de distintos tamaños.",l:["numero","matematicas","universo","filosofia"]},
+geometria:{t:"Geometría",c:"Ciencia",s:"Estudio de formas, tamaños y posiciones en el espacio; Euclides la sistematizó en Alejandría.",l:["matematicas","esfera","cubo","piramides","grecia_antigua"]},
+esfera:{t:"Esfera",c:"Ciencia",s:"Cuerpo redondo cuyos puntos equidistan del centro; planetas, burbujas y balones se le aproximan.",l:["geometria","balon","tierra","burbuja"]},
+cubo:{t:"Cubo",c:"Ciencia",s:"Sólido de seis caras cuadradas; forma de dados, cajas y el famoso cubo de Rubik.",l:["geometria","dado","cristal"]},
+cristal:{t:"Cristal",c:"Materiales",s:"Sólido cuyos átomos se ordenan en una red regular, como la sal, el cuarzo o el diamante.",l:["cubo","diamante","sal","quimica","vidrio"]},
+diamante:{t:"Diamante",c:"Materiales",s:"Forma cristalina del carbono, el material natural más duro; se forma a gran presión bajo tierra.",l:["carbon","cristal","dinero","volcan","joya"]},
+joya:{t:"Joya",c:"Objetos",s:"Adorno de metales y piedras preciosas usado desde la prehistoria como símbolo de estatus.",l:["oro","diamante","cuerpo_humano","dinero"]},
+carbon:{t:"Carbono",c:"Ciencia",s:"Elemento base de toda la vida conocida; forma diamante, grafito y el CO2 que calienta el planeta.",l:["diamante","quimica","cambio_climatico","fuego","adn","planta"]},
+sal:{t:"Sal",c:"Comida",s:"Cloruro de sodio; conservó alimentos durante milenios y dio origen a la palabra salario.",l:["cristal","oceano","dinero","quimica","cuerpo_humano"]},
+vidrio:{t:"Vidrio",c:"Materiales",s:"Material transparente obtenido al fundir arena; permitió ventanas, lentes y telescopios.",l:["cristal","arena","telescopio","horno","ventana"]},
+ventana:{t:"Ventana",c:"Objetos",s:"Abertura en un muro que deja pasar luz y aire; el vidrio la hizo cerrada y transparente.",l:["vidrio","arquitectura","luz","casa"]},
+casa:{t:"Casa",c:"Objetos",s:"Edificio para vivir; sus formas van desde chozas de barro hasta rascacielos.",l:["arquitectura","ventana","ciudad","familia","madera"]},
+familia:{t:"Familia",c:"Ideas",s:"Grupo de personas unidas por parentesco; base de la organización social humana.",l:["casa","ninez","adn","matrimonio"]},
+matrimonio:{t:"Matrimonio",c:"Ideas",s:"Unión reconocida social o legalmente entre personas; sus reglas varían enormemente entre culturas.",l:["familia","amor","catolicismo","derecho"]},
+amor:{t:"Amor",c:"Ideas",s:"Emoción intensa de afecto y apego; poetas, biólogos y neurólogos intentan explicarlo.",l:["cerebro","matrimonio","poesia","corazon"]},
+poesia:{t:"Poesía",c:"Cultura",s:"Literatura que usa el ritmo y la imagen del lenguaje; la forma más antigua de contar historias.",l:["literatura","amor","musica","neruda"]},
+neruda:{t:"Pablo Neruda",c:"Personas",s:"Poeta chileno, Nobel de Literatura en 1971, célebre por sus poemas de amor.",l:["poesia","chile","amor","literatura"]},
+chile:{t:"Chile",c:"Lugares",s:"País largo y estrecho entre los Andes y el Pacífico; tiene el desierto más árido del mundo.",l:["andes","desierto","neruda","oceano_pacifico","volcan","vino","telescopio"]},
+vino:{t:"Vino",c:"Comida",s:"Bebida fermentada de uva, elaborada desde hace 8.000 años en el Cáucaso.",l:["uva","fermentacion","francia","chile","roma_antigua"]},
+uva:{t:"Uva",c:"Comida",s:"Fruto de la vid, en racimos; base del vino, las pasas y el jugo.",l:["vino","planta","fermentacion","agricultura"]},
+fermentacion:{t:"Fermentación",c:"Ciencia",s:"Proceso en que microbios transforman azúcares en alcohol o ácidos; da pan, cerveza, yogur y vino.",l:["vino","pan","levadura","bacteria","cerveza"]},
+cerveza:{t:"Cerveza",c:"Comida",s:"Bebida fermentada de cereales, tan antigua como la agricultura; los egipcios la bebían a diario.",l:["fermentacion","trigo","alemania","egipto_antiguo","agua"]},
+levadura:{t:"Levadura",c:"Naturaleza",s:"Hongo microscópico que fermenta azúcares; hace subir el pan y alcohólica la cerveza.",l:["fermentacion","pan","hongo","microscopio"]},
+hongo:{t:"Hongo",c:"Naturaleza",s:"Reino de seres vivos que incluye setas, mohos y levaduras; de un moho salió la penicilina.",l:["levadura","penicilina","bosque","biologia"]},
+penicilina:{t:"Penicilina",c:"Ciencia",s:"Primer antibiótico, descubierto por Fleming en 1928 en un cultivo contaminado por moho.",l:["hongo","medicina","bacteria","reino_unido"]},
+bacteria:{t:"Bacteria",c:"Naturaleza",s:"Organismo unicelular sin núcleo; hay más bacterias en tu cuerpo que células propias.",l:["penicilina","queso","microscopio","biologia","fermentacion","enfermedad"]},
+enfermedad:{t:"Enfermedad",c:"Ciencia",s:"Alteración de la salud; puede deberse a microbios, genes, ambiente o hábitos.",l:["bacteria","virus","medicina","vacuna","cuerpo_humano"]},
+virus:{t:"Virus",c:"Naturaleza",s:"Agente diminuto que solo se reproduce dentro de células; causa desde el resfriado hasta pandemias.",l:["enfermedad","vacuna","adn","pandemia","microscopio"]},
+pandemia:{t:"Pandemia",c:"Historia",s:"Epidemia que se extiende por varios continentes; la de 1918 y la de COVID-19 cambiaron el mundo.",l:["virus","vacuna","medicina","internet","peste_negra"]},
+peste_negra:{t:"Peste negra",c:"Historia",s:"Pandemia de peste bubónica que mató a un tercio de Europa en el siglo XIV.",l:["pandemia","bacteria","edad_media","rata"]},
+rata:{t:"Rata",c:"Naturaleza",s:"Roedor que convive con los humanos en todas las ciudades; también es un animal clave de laboratorio.",l:["mamifero","peste_negra","ciudad","medicina"]},
+vacuna:{t:"Vacuna",c:"Ciencia",s:"Preparado que entrena al sistema inmune; la primera, contra la viruela, viene de las vacas.",l:["virus","enfermedad","medicina","vaca","inmunidad"]},
+inmunidad:{t:"Sistema inmunitario",c:"Cuerpo",s:"Red de células y órganos que defiende al cuerpo de infecciones.",l:["vacuna","sangre","cuerpo_humano","bacteria"]},
+medicina:{t:"Medicina",c:"Ciencia",s:"Ciencia y práctica de prevenir y curar enfermedades; su juramento viene de Hipócrates.",l:["enfermedad","penicilina","anatomia","hospital","grecia_antigua","vacuna"]},
+hospital:{t:"Hospital",c:"Lugares",s:"Institución donde se atiende a enfermos; los primeros modernos surgieron en la Edad Media.",l:["medicina","enfermedad","ciudad","edad_media"]},
+anatomia:{t:"Anatomía",c:"Ciencia",s:"Estudio de la estructura del cuerpo; Leonardo y Vesalio la revolucionaron con disecciones.",l:["cuerpo_humano","medicina","leonardo","corazon","cerebro"]},
+cuerpo_humano:{t:"Cuerpo humano",c:"Cuerpo",s:"Organismo formado por unos 37 billones de células organizadas en órganos y sistemas.",l:["cerebro","corazon","sangre","hueso","ojo","anatomia","adn"]},
+cerebro:{t:"Cerebro",c:"Cuerpo",s:"Órgano de unos 86 mil millones de neuronas que controla pensamiento, memoria y movimiento.",l:["cuerpo_humano","neurona","memoria","ojo","inteligencia_artificial","sueno"]},
+neurona:{t:"Neurona",c:"Cuerpo",s:"Célula nerviosa que transmite señales eléctricas y químicas; base del pensamiento.",l:["cerebro","electricidad","celula","inteligencia_artificial"]},
+memoria:{t:"Memoria",c:"Ideas",s:"Capacidad de guardar y recuperar información; el sueño ayuda a consolidarla.",l:["cerebro","sueno","computadora","olvido"]},
+olvido:{t:"Olvido",c:"Ideas",s:"Pérdida de recuerdos; es normal, necesario y a veces síntoma de enfermedad.",l:["memoria","cerebro","tiempo"]},
+sueno:{t:"Sueño",c:"Cuerpo",s:"Estado de reposo en que el cerebro ordena recuerdos; pasamos un tercio de la vida durmiendo.",l:["cerebro","memoria","noche","cafeina"]},
+noche:{t:"Noche",c:"Naturaleza",s:"Periodo en que el Sol está bajo el horizonte; permitió a los humanos estudiar las estrellas.",l:["sueno","luna","estrella","tierra","luz"]},
+corazon:{t:"Corazón",c:"Cuerpo",s:"Músculo que bombea sangre unas 100.000 veces al día.",l:["sangre","cuerpo_humano","amor","musculo"]},
+musculo:{t:"Músculo",c:"Cuerpo",s:"Tejido que se contrae para producir movimiento; el cuerpo tiene más de 600.",l:["corazon","cuerpo_humano","carne","proteina","hueso"]},
+hueso:{t:"Hueso",c:"Cuerpo",s:"Tejido rígido que forma el esqueleto; almacena calcio y fabrica sangre.",l:["cuerpo_humano","calcio","fosil","musculo"]},
+calcio:{t:"Calcio",c:"Ciencia",s:"Metal esencial para huesos y dientes; abunda en leche, caliza y conchas marinas.",l:["hueso","leche","quimica","metal"]},
+sangre:{t:"Sangre",c:"Cuerpo",s:"Líquido que transporta oxígeno, nutrientes y defensas por el cuerpo.",l:["corazon","oxigeno","hierro","inmunidad","cuerpo_humano"]},
+proteina:{t:"Proteína",c:"Ciencia",s:"Molécula grande hecha de aminoácidos; construye músculos, enzimas y anticuerpos.",l:["adn","musculo","carne","huevo","celula"]},
+adn:{t:"ADN",c:"Ciencia",s:"Molécula en doble hélice que guarda las instrucciones de cada ser vivo.",l:["celula","evolucion","proteina","genetica","carbon"]},
+genetica:{t:"Genética",c:"Ciencia",s:"Ciencia de la herencia; nació con Mendel y sus guisantes y hoy edita genes.",l:["adn","evolucion","familia","biologia"]},
+celula:{t:"Célula",c:"Ciencia",s:"Unidad básica de la vida; se descubrió gracias al microscopio en el siglo XVII.",l:["adn","microscopio","biologia","bacteria","neurona"]},
+biologia:{t:"Biología",c:"Ciencia",s:"Ciencia de los seres vivos, desde moléculas hasta ecosistemas.",l:["celula","evolucion","ciencia","planta","animal"]},
+animal:{t:"Animal",c:"Naturaleza",s:"Ser vivo pluricelular que se alimenta de otros organismos y suele moverse.",l:["mamifero","ave","reptil","biologia","perro"]},
+perro:{t:"Perro",c:"Naturaleza",s:"Primer animal domesticado, descendiente del lobo; hace más de 15.000 años que vive con humanos.",l:["animal","mamifero","lobo","familia","olfato"]},
+lobo:{t:"Lobo",c:"Naturaleza",s:"Cánido salvaje que caza en manada; antepasado del perro y protagonista de mil cuentos.",l:["perro","mamifero","bosque","luna"]},
+olfato:{t:"Olfato",c:"Cuerpo",s:"Sentido que detecta moléculas en el aire; en el perro es hasta 10.000 veces más agudo que en humanos.",l:["perro","cerebro","nariz","perfume"]},
+nariz:{t:"Nariz",c:"Cuerpo",s:"Órgano del olfato y entrada del aire a los pulmones.",l:["olfato","rostro","aire","oxigeno"]},
+perfume:{t:"Perfume",c:"Objetos",s:"Mezcla aromática de aceites y alcohol; Egipto y Francia son sus capitales históricas.",l:["olfato","francia","egipto_antiguo","planta","quimica"]},
+mamifero:{t:"Mamífero",c:"Naturaleza",s:"Vertebrado con pelo que amamanta a sus crías; incluye desde el murciélago hasta la ballena.",l:["animal","leche","ballena","vaca","perro","primate"]},
+primate:{t:"Primate",c:"Naturaleza",s:"Orden de mamíferos con manos prensiles y gran cerebro: monos, simios y humanos.",l:["mamifero","chimpance","evolucion","cerebro"]},
+chimpance:{t:"Chimpancé",c:"Naturaleza",s:"Simio africano que comparte casi el 99 % de su ADN con los humanos y usa herramientas.",l:["primate","africa","adn","bosque"]},
+ballena:{t:"Ballena",c:"Naturaleza",s:"Mamífero marino gigante; la azul es el animal más grande que ha existido.",l:["mamifero","oceano","oxigeno","sonido"]},
+oceano:{t:"Océano",c:"Naturaleza",s:"Masa de agua salada que cubre el 71 % de la Tierra y regula su clima.",l:["agua","sal","ballena","oceano_pacifico","oceano_atlantico","tierra","playa","pez"]},
+pez:{t:"Pez",c:"Naturaleza",s:"Vertebrado acuático con branquias; hay más especies de peces que de todos los demás vertebrados juntos.",l:["oceano","agua","evolucion","tiburon"]},
+tiburon:{t:"Tiburón",c:"Naturaleza",s:"Pez cartilaginoso más antiguo que los árboles; su fama de asesino es en gran parte injusta.",l:["pez","oceano","cine","fosil"]},
+oceano_pacifico:{t:"Océano Pacífico",c:"Lugares",s:"El océano más grande y profundo; ocupa un tercio de la superficie del planeta.",l:["oceano","japon","chile","galapagos","volcan","australia"]},
+oceano_atlantico:{t:"Océano Atlántico",c:"Lugares",s:"Segundo océano más grande; separa América de Europa y África y fue la ruta de Colón.",l:["oceano","colon","brasil","mar_caribe","africa","europa"]},
+mar_caribe:{t:"Mar Caribe",c:"Lugares",s:"Mar tropical entre las Antillas y Centroamérica; ruta de piratas y hoy de turistas.",l:["oceano_atlantico","barranquilla","puerto_rico","pirata","playa","cuba"]},
+cuba:{t:"Cuba",c:"Lugares",s:"Isla mayor de las Antillas, famosa por su música, sus autos antiguos y su revolución.",l:["mar_caribe","musica","azucar","espanol","baile"]},
+azucar:{t:"Azúcar",c:"Comida",s:"Carbohidrato dulce extraído de la caña o la remolacha; su comercio impulsó la esclavitud en América.",l:["cuba","planta","chocolate","brasil","esclavitud"]},
+esclavitud:{t:"Esclavitud",c:"Historia",s:"Sistema que trata a personas como propiedad; abolida legalmente en todo el mundo solo en el siglo XX.",l:["azucar","africa","estados_unidos","roma_antigua","derecho"]},
+derecho:{t:"Derecho",c:"Ideas",s:"Conjunto de normas que regulan la convivencia; el romano es la base del de casi toda Latinoamérica.",l:["roma_antigua","matrimonio","esclavitud","democracia"]},
+democracia:{t:"Democracia",c:"Ideas",s:"Sistema de gobierno en que el poder emana del pueblo; nació en Atenas.",l:["grecia_antigua","derecho","voto","estados_unidos"]},
+voto:{t:"Voto",c:"Ideas",s:"Acto de elegir en una votación; el sufragio femenino universal es del siglo XX.",l:["democracia","papel","numero"]},
+pirata:{t:"Pirata",c:"Historia",s:"Ladrón de mar; los del Caribe del siglo XVII inspiraron libros y películas.",l:["mar_caribe","barco","oro","cine"]},
+barco:{t:"Barco",c:"Objetos",s:"Vehículo flotante; permitió el comercio, la exploración y el encuentro de continentes.",l:["oceano","colon","madera","pirata","viento"]},
+colon:{t:"Cristóbal Colón",c:"Personas",s:"Navegante genovés que en 1492 cruzó el Atlántico al servicio de España y cambió la historia.",l:["espana","oceano_atlantico","barco","cuba","italia"]},
+playa:{t:"Playa",c:"Naturaleza",s:"Franja de arena o piedras a la orilla del mar; destino turístico por excelencia.",l:["arena","oceano","sol","rio_de_janeiro","mar_caribe"]},
+arena:{t:"Arena",c:"Materiales",s:"Granos de roca diminutos; sirve para hacer vidrio, concreto y chips de silicio.",l:["playa","vidrio","desierto","silicio"]},
+silicio:{t:"Silicio",c:"Ciencia",s:"Elemento semiconductor abundante en la arena; base de todos los chips electrónicos.",l:["arena","computadora","chip","quimica"]},
+chip:{t:"Circuito integrado",c:"Tecnología",s:"Pieza de silicio con miles de millones de transistores; el cerebro de teléfonos y computadoras.",l:["silicio","computadora","telefono","electricidad"]},
+computadora:{t:"Computadora",c:"Tecnología",s:"Máquina que ejecuta instrucciones programadas; su base teórica la puso Alan Turing.",l:["chip","internet","turing","programacion","inteligencia_artificial","videojuego","matematicas"]},
+turing:{t:"Alan Turing",c:"Personas",s:"Matemático británico, padre de la computación; descifró los códigos nazis en la Segunda Guerra Mundial.",l:["computadora","matematicas","reino_unido","segunda_guerra","inteligencia_artificial"]},
+programacion:{t:"Programación",c:"Tecnología",s:"Escritura de instrucciones para que una computadora las ejecute; la primera programadora fue Ada Lovelace.",l:["computadora","internet","matematicas","ingles"]},
+inteligencia_artificial:{t:"Inteligencia artificial",c:"Tecnología",s:"Sistemas que aprenden y razonan a partir de datos; hoy escriben, dibujan y conducen.",l:["computadora","cerebro","turing","ajedrez","internet"]},
+internet:{t:"Internet",c:"Tecnología",s:"Red mundial de computadoras nacida de un proyecto militar estadounidense en 1969.",l:["computadora","wikipedia","telefono","estados_unidos","redes_sociales","satelite"]},
+redes_sociales:{t:"Redes sociales",c:"Tecnología",s:"Plataformas para compartir y conectar en línea; moldean la política y el humor de miles de millones.",l:["internet","telefono","fotografia","periodismo"]},
+telefono:{t:"Teléfono",c:"Tecnología",s:"Aparato para hablar a distancia; el móvil inteligente es hoy el objeto más usado del mundo.",l:["internet","chip","electricidad","fotografia","sonido"]},
+fotografia:{t:"Fotografía",c:"Cultura",s:"Técnica para fijar imágenes con luz; nació en 1826 y hoy se toman más de un billón de fotos al año.",l:["luz","ojo","cine","telefono","arte","quimica"]},
+cine:{t:"Cine",c:"Cultura",s:"Arte de contar historias con imágenes en movimiento; los Lumière lo estrenaron en 1895.",l:["fotografia","television","hollywood","teatro","luz"]},
+hollywood:{t:"Hollywood",c:"Lugares",s:"Barrio de Los Ángeles que se convirtió en sinónimo de la industria del cine.",l:["cine","estados_unidos","television","sol"]},
+television:{t:"Televisión",c:"Tecnología",s:"Transmisión de imágenes y sonido a distancia; dominó el entretenimiento en la segunda mitad del siglo XX.",l:["cine","radio","electricidad","satelite","futbol"]},
+radio:{t:"Radio",c:"Tecnología",s:"Transmisión de sonido por ondas electromagnéticas; el primer medio masivo instantáneo.",l:["television","sonido","electricidad","onda","musica"]},
+onda:{t:"Onda",c:"Ciencia",s:"Perturbación que transporta energía sin transportar materia: sonido, luz, olas.",l:["sonido","luz","radio","oceano","fisica"]},
+sonido:{t:"Sonido",c:"Ciencia",s:"Vibración que viaja por el aire u otro medio y que el oído convierte en señales al cerebro.",l:["onda","oido","musica","aire","ballena"]},
+oido:{t:"Oído",c:"Cuerpo",s:"Órgano de la audición y el equilibrio; sus huesecillos son los más pequeños del cuerpo.",l:["sonido","cuerpo_humano","hueso","cerebro"]},
+ojo:{t:"Ojo",c:"Cuerpo",s:"Órgano que capta la luz y la convierte en imágenes; ha evolucionado decenas de veces por separado.",l:["luz","cerebro","color","rostro","evolucion"]},
+luz:{t:"Luz",c:"Ciencia",s:"Radiación electromagnética visible; viaja a 300.000 km por segundo y nada la supera.",l:["sol","onda","color","ojo","fisica","fotografia","einstein"]},
+color:{t:"Color",c:"Ciencia",s:"Percepción de las distintas longitudes de onda de la luz; Newton lo descompuso con un prisma.",l:["luz","ojo","pintura","arcoiris","newton"]},
+arcoiris:{t:"Arcoíris",c:"Naturaleza",s:"Arco de colores que aparece cuando la luz del Sol atraviesa gotas de lluvia.",l:["color","luz","lluvia","sol"]},
+lluvia:{t:"Lluvia",c:"Naturaleza",s:"Agua que cae de las nubes; alimenta ríos, cultivos y el humor de las ciudades.",l:["agua","nube","clima","arcoiris","amazonas"]},
+nube:{t:"Nube",c:"Naturaleza",s:"Masa de gotas de agua o hielo suspendida en la atmósfera.",l:["lluvia","agua","atmosfera","cielo"]},
+cielo:{t:"Cielo",c:"Naturaleza",s:"Lo que vemos al mirar hacia arriba: la atmósfera de día, el espacio de noche.",l:["nube","atmosfera","estrella","sol","luna","azul"]},
+azul:{t:"Azul",c:"Ciencia",s:"Color del cielo y el mar; el pigmento azul fue durante siglos más caro que el oro.",l:["color","cielo","oceano","pintura"]},
+atmosfera:{t:"Atmósfera",c:"Naturaleza",s:"Capa de gases que rodea la Tierra; nos protege de la radiación y mantiene el clima.",l:["aire","oxigeno","tierra","clima","meteorito","nube"]},
+aire:{t:"Aire",c:"Naturaleza",s:"Mezcla de gases que respiramos: 78 % nitrógeno, 21 % oxígeno.",l:["atmosfera","oxigeno","viento","sonido","nariz"]},
+viento:{t:"Viento",c:"Naturaleza",s:"Movimiento del aire por diferencias de presión; mueve barcos, molinos y huracanes.",l:["aire","clima","barco","energia","huracan"]},
+huracan:{t:"Huracán",c:"Naturaleza",s:"Tormenta giratoria gigante que nace sobre mares cálidos; el Caribe los sufre cada año.",l:["viento","mar_caribe","clima","lluvia","cambio_climatico"]},
+oxigeno:{t:"Oxígeno",c:"Ciencia",s:"Gas que respiramos y que alimenta el fuego; lo producen plantas y algas.",l:["aire","fuego","planta","sangre","agua","quimica"]},
+agua:{t:"Agua",c:"Ciencia",s:"Molécula de dos hidrógenos y un oxígeno; imprescindible para toda la vida conocida.",l:["oceano","lluvia","hielo","oxigeno","rio","quimica","planta"]},
+hielo:{t:"Hielo",c:"Naturaleza",s:"Agua en estado sólido; flota porque es menos densa que el agua líquida.",l:["agua","antartida","frio","clima"]},
+frio:{t:"Frío",c:"Ciencia",s:"Baja temperatura; el cero absoluto, a -273 °C, es el límite físico.",l:["hielo","calor","invierno","antartida"]},
+calor:{t:"Calor",c:"Ciencia",s:"Energía que pasa de un cuerpo caliente a uno frío; mueve motores y el clima.",l:["frio","fuego","sol","energia","verano"]},
+verano:{t:"Verano",c:"Naturaleza",s:"Estación más cálida del año; en el hemisferio sur cae en diciembre.",l:["calor","sol","playa","invierno","tierra"]},
+invierno:{t:"Invierno",c:"Naturaleza",s:"Estación más fría; en ella se inventaron deportes como el baloncesto y el hockey.",l:["frio","verano","hielo","baloncesto","navidad"]},
+navidad:{t:"Navidad",c:"Cultura",s:"Fiesta cristiana del 25 de diciembre; hoy también celebración global de regalos y reuniones familiares.",l:["catolicismo","invierno","familia","regalo"]},
+regalo:{t:"Regalo",c:"Ideas",s:"Objeto entregado sin esperar pago; en muchas culturas crea vínculos y obligaciones.",l:["navidad","familia","dinero","amor"]},
+antartida:{t:"Antártida",c:"Lugares",s:"Continente helado del polo sur, sin población permanente y protegido por tratado internacional.",l:["hielo","pinguino","frio","oceano","cambio_climatico"]},
+clima:{t:"Clima",c:"Naturaleza",s:"Condiciones atmosféricas promedio de un lugar a lo largo de décadas.",l:["cambio_climatico","lluvia","atmosfera","sol","viento"]},
+cambio_climatico:{t:"Cambio climático",c:"Ciencia",s:"Calentamiento global causado por los gases de efecto invernadero de origen humano.",l:["clima","carbon","energia","antartida","huracan","metano","extincion"]},
+metano:{t:"Metano",c:"Ciencia",s:"Gas de efecto invernadero mucho más potente que el CO2; lo emiten vacas, pantanos y basureros.",l:["vaca","cambio_climatico","quimica","energia"]},
+energia:{t:"Energía",c:"Ciencia",s:"Capacidad de realizar trabajo; se conserva, solo se transforma.",l:["electricidad","sol","calor","fisica","petroleo","viento","einstein"]},
+petroleo:{t:"Petróleo",c:"Materiales",s:"Líquido fósil formado de plancton antiguo; combustible, plástico y motivo de guerras.",l:["energia","carbon","plastico","dinero","venezuela"]},
+venezuela:{t:"Venezuela",c:"Lugares",s:"País caribeño con las mayores reservas de petróleo del mundo y el salto de agua más alto.",l:["petroleo","colombia","mar_caribe","cascada","espanol"]},
+cascada:{t:"Cascada",c:"Naturaleza",s:"Caída de agua de un río por un desnivel; el Salto Ángel mide casi un kilómetro.",l:["rio","venezuela","agua","montana"]},
+plastico:{t:"Plástico",c:"Materiales",s:"Polímero sintético barato y duradero; su basura ya forma islas en el océano.",l:["petroleo","quimica","oceano","basura"]},
+basura:{t:"Basura",c:"Ideas",s:"Residuos que desechamos; la humanidad genera más de 2.000 millones de toneladas al año.",l:["plastico","ciudad","metano","reciclaje"]},
+reciclaje:{t:"Reciclaje",c:"Ideas",s:"Transformar residuos en nuevos materiales; el aluminio y el vidrio se reciclan infinitamente.",l:["basura","vidrio","plastico","metal"]},
+electricidad:{t:"Electricidad",c:"Ciencia",s:"Flujo de cargas eléctricas; ilumina ciudades y alimenta cada chip.",l:["energia","chip","rayo","luz","neurona","tesla","radio"]},
+rayo:{t:"Rayo",c:"Naturaleza",s:"Descarga eléctrica gigante entre nubes y tierra; Franklin la estudió con una cometa.",l:["electricidad","nube","tormenta","fuego"]},
+tormenta:{t:"Tormenta",c:"Naturaleza",s:"Perturbación atmosférica violenta con lluvia, viento y a menudo rayos.",l:["rayo","lluvia","viento","huracan","nube"]},
+tesla:{t:"Nikola Tesla",c:"Personas",s:"Inventor serbio-estadounidense de la corriente alterna; soñó con transmitir energía sin cables.",l:["electricidad","estados_unidos","radio","energia"]},
+einstein:{t:"Albert Einstein",c:"Personas",s:"Físico alemán autor de la relatividad; su E=mc² es la ecuación más famosa.",l:["fisica","luz","energia","alemania","universo","tiempo"]},
+fisica:{t:"Física",c:"Ciencia",s:"Ciencia de la materia, la energía y sus interacciones, desde quarks hasta galaxias.",l:["matematicas","energia","luz","newton","einstein","universo","atomo"]},
+atomo:{t:"Átomo",c:"Ciencia",s:"Unidad más pequeña de un elemento; un núcleo diminuto rodeado de electrones.",l:["fisica","quimica","electricidad","universo","energia_nuclear"]},
+energia_nuclear:{t:"Energía nuclear",c:"Tecnología",s:"Energía liberada al dividir o fusionar núcleos atómicos; alimenta centrales y el propio Sol.",l:["atomo","energia","sol","segunda_guerra","einstein"]},
+quimica:{t:"Química",c:"Ciencia",s:"Ciencia de la materia y sus transformaciones; su tabla periódica la ordenó Mendeléyev.",l:["atomo","agua","carbon","oxigeno","metal","fuego"]},
+metal:{t:"Metal",c:"Materiales",s:"Elemento brillante que conduce calor y electricidad; el hierro y el cobre marcaron eras enteras.",l:["hierro","oro","quimica","electricidad","reciclaje"]},
+hierro:{t:"Hierro",c:"Materiales",s:"Metal más usado del mundo y núcleo de la Tierra; en la sangre transporta el oxígeno.",l:["metal","sangre","acero","tierra","horno","meteorito"]},
+acero:{t:"Acero",c:"Materiales",s:"Aleación de hierro y carbono; permitió rascacielos, puentes y trenes.",l:["hierro","carbon","arquitectura","tren","rascacielos"]},
+rascacielos:{t:"Rascacielos",c:"Objetos",s:"Edificio muy alto de estructura de acero; el Burj Khalifa supera los 800 metros.",l:["acero","arquitectura","ciudad","ascensor","nueva_york"]},
+ascensor:{t:"Ascensor",c:"Objetos",s:"Cabina que sube y baja por un edificio; su freno de seguridad hizo posibles los rascacielos.",l:["rascacielos","electricidad","motor","gravedad"]},
+motor:{t:"Motor",c:"Tecnología",s:"Máquina que convierte energía en movimiento; de vapor, de combustión o eléctrico.",l:["energia","tren","automovil","electricidad","ascensor"]},
+automovil:{t:"Automóvil",c:"Objetos",s:"Vehículo con motor y ruedas; transformó las ciudades y el aire que respiran.",l:["motor","rueda","petroleo","ciudad","caucho"]},
+rueda:{t:"Rueda",c:"Objetos",s:"Invento de hace 5.500 años que hizo posibles carros, molinos y máquinas.",l:["automovil","tren","bicicleta","madera"]},
+bicicleta:{t:"Bicicleta",c:"Objetos",s:"Vehículo de dos ruedas movido por pedales; el transporte más eficiente jamás inventado.",l:["rueda","ciudad","caucho","deporte"]},
+deporte:{t:"Deporte",c:"Deporte",s:"Actividad física reglada y competitiva; los Juegos Olímpicos son su cumbre.",l:["futbol","baloncesto","juegos_olimpicos","bicicleta","cuerpo_humano","juego"]},
+juegos_olimpicos:{t:"Juegos Olímpicos",c:"Deporte",s:"Competencia multideportiva cada cuatro años, revivida en 1896 con inspiración en la Grecia antigua.",l:["deporte","grecia_antigua","estadio","paris","television"]},
+caucho:{t:"Caucho",c:"Materiales",s:"Elástico natural del látex de un árbol amazónico; su fiebre marcó la historia de la selva.",l:["amazonas","planta","balon","automovil","brasil"]},
+tren:{t:"Tren",c:"Objetos",s:"Vehículo sobre rieles; el ferrocarril impulsó la Revolución Industrial.",l:["motor","acero","rueda","revolucion_industrial","ciudad"]},
+revolucion_industrial:{t:"Revolución Industrial",c:"Historia",s:"Transformación iniciada en Inglaterra en el siglo XVIII con máquinas de vapor y fábricas.",l:["reino_unido","tren","motor","carbon","ciudad","capitalismo"]},
+capitalismo:{t:"Capitalismo",c:"Ideas",s:"Sistema económico basado en propiedad privada y mercado; dominante desde la Revolución Industrial.",l:["dinero","revolucion_industrial","estados_unidos","banco"]},
+banco:{t:"Banco",c:"Ideas",s:"Institución que guarda y presta dinero; los primeros modernos surgieron en la Italia renacentista.",l:["dinero","capitalismo","italia","internet"]},
+dinero:{t:"Dinero",c:"Ideas",s:"Medio de intercambio aceptado por todos; ha sido sal, conchas, oro, papel y ahora bits.",l:["oro","banco","papel","sal","capitalismo","numero"]},
+ciudad:{t:"Ciudad",c:"Lugares",s:"Asentamiento grande y denso; más de la mitad de la humanidad ya vive en una.",l:["arquitectura","rascacielos","casa","tren","automovil","bogota","roma_antigua"]},
+arquitectura:{t:"Arquitectura",c:"Cultura",s:"Arte y técnica de diseñar edificios; de las pirámides a los rascacielos.",l:["ciudad","piramides","rascacielos","casa","arte","piedra"]},
+piramides:{t:"Pirámides de Guiza",c:"Lugares",s:"Tumbas de faraones egipcios de hace 4.500 años; la única maravilla antigua que sigue en pie.",l:["egipto_antiguo","piedra","geometria","arquitectura","desierto"]},
+egipto_antiguo:{t:"Antiguo Egipto",c:"Historia",s:"Civilización del Nilo que duró 3.000 años; inventó el papiro, momias y monumentos colosales.",l:["piramides","rio","desierto","africa","papel","gato"]},
+gato:{t:"Gato",c:"Naturaleza",s:"Felino doméstico, venerado en Egipto y hoy rey de internet.",l:["egipto_antiguo","mamifero","animal","internet","ojo"]},
+desierto:{t:"Desierto",c:"Naturaleza",s:"Región con muy poca lluvia; el Sahara es el mayor cálido y la Antártida el mayor de todos.",l:["arena","sol","chile","africa","egipto_antiguo","las_vegas"]},
+rio:{t:"Río",c:"Naturaleza",s:"Corriente de agua que fluye hacia el mar; el Amazonas lleva más agua que ningún otro.",l:["agua","amazonas","egipto_antiguo","cascada","montana"]},
+montana:{t:"Montaña",c:"Naturaleza",s:"Elevación natural del terreno; el Everest alcanza 8.849 metros.",l:["andes","everest","volcan","rio","hielo","geologia"]},
+everest:{t:"Monte Everest",c:"Lugares",s:"Montaña más alta del mundo, en el Himalaya, entre Nepal y China.",l:["montana","china","india","hielo","oxigeno"]},
+volcan:{t:"Volcán",c:"Naturaleza",s:"Abertura por donde sale magma; crea islas y destruye ciudades como Pompeya.",l:["montana","fuego","geologia","galapagos","italia","japon"]},
+geologia:{t:"Geología",c:"Ciencia",s:"Ciencia de la Tierra: rocas, placas, terremotos y el tiempo profundo.",l:["tierra","volcan","fosil","piedra","terremoto"]},
+terremoto:{t:"Terremoto",c:"Naturaleza",s:"Sacudida del suelo por movimiento de placas; Chile y Japón viven sobre las más activas.",l:["geologia","chile","japon","tierra"]},
+tierra:{t:"Tierra",c:"Espacio",s:"Tercer planeta del Sistema Solar y el único conocido con vida.",l:["sistema_solar","luna","sol","oceano","atmosfera","geologia","esfera"]},
+luna:{t:"Luna",c:"Espacio",s:"Único satélite natural de la Tierra; doce personas han caminado sobre ella.",l:["tierra","nasa","noche","oceano","apolo"]},
+apolo:{t:"Programa Apolo",c:"Espacio",s:"Programa de la NASA que llevó humanos a la Luna entre 1969 y 1972.",l:["luna","nasa","estados_unidos","cohete","computadora"]},
+cohete:{t:"Cohete",c:"Tecnología",s:"Vehículo propulsado por expulsión de gases; única forma de salir de la Tierra.",l:["apolo","nasa","marte","fuego","satelite","china"]},
+satelite:{t:"Satélite artificial",c:"Tecnología",s:"Objeto puesto en órbita por humanos; hay miles para GPS, televisión e internet.",l:["cohete","internet","television","tierra","nasa"]},
+nasa:{t:"NASA",c:"Espacio",s:"Agencia espacial de Estados Unidos, creada en 1958 en plena carrera con la Unión Soviética.",l:["apolo","estados_unidos","marte","cohete","telescopio","asteroide"]},
+marte:{t:"Marte",c:"Espacio",s:"Planeta rojo vecino de la Tierra; varios robots lo recorren buscando rastros de vida.",l:["sistema_solar","nasa","cohete","agua","hierro"]},
+sistema_solar:{t:"Sistema solar",c:"Espacio",s:"El Sol y todo lo que orbita a su alrededor: ocho planetas, lunas, asteroides y cometas.",l:["sol","tierra","marte","asteroide","universo","jupiter"]},
+jupiter:{t:"Júpiter",c:"Espacio",s:"Planeta más grande del Sistema Solar; cabrían 1.300 Tierras dentro.",l:["sistema_solar","tormenta","luna","telescopio"]},
+sol:{t:"Sol",c:"Espacio",s:"Estrella del centro del Sistema Solar; su luz tarda 8 minutos en llegar.",l:["estrella","luz","sistema_solar","energia_nuclear","calor","cielo"]},
+estrella:{t:"Estrella",c:"Espacio",s:"Esfera de gas que brilla por fusión nuclear; el universo tiene más que granos de arena la Tierra.",l:["sol","universo","noche","galaxia","telescopio"]},
+galaxia:{t:"Galaxia",c:"Espacio",s:"Conjunto de miles de millones de estrellas unidas por gravedad; la nuestra es la Vía Láctea.",l:["estrella","universo","gravedad","telescopio"]},
+universo:{t:"Universo",c:"Espacio",s:"Todo lo que existe; nació hace 13.800 millones de años en el Big Bang y sigue expandiéndose.",l:["galaxia","big_bang","tiempo","fisica","infinito","estrella"]},
+big_bang:{t:"Big Bang",c:"Espacio",s:"Teoría de que el universo surgió de un estado muy denso y caliente que se expandió.",l:["universo","tiempo","fisica","luz"]},
+tiempo:{t:"Tiempo",c:"Ideas",s:"Dimensión en que suceden los eventos; Einstein mostró que corre distinto según la velocidad y la gravedad.",l:["reloj","einstein","universo","filosofia","olvido"]},
+reloj:{t:"Reloj",c:"Objetos",s:"Instrumento para medir el tiempo; de los de sol a los atómicos que no fallan un segundo en millones de años.",l:["tiempo","sol","atomo","suiza"]},
+suiza:{t:"Suiza",c:"Lugares",s:"País alpino neutral famoso por relojes, chocolate, bancos y el CERN.",l:["reloj","chocolate","banco","montana","europa"]},
+chocolate:{t:"Chocolate",c:"Comida",s:"Alimento del cacao, sagrado para mayas y aztecas y endulzado por los europeos.",l:["cacao","mexico","suiza","azucar","cafeina"]},
+cacao:{t:"Cacao",c:"Comida",s:"Árbol tropical americano cuyas semillas fermentadas dan el chocolate.",l:["chocolate","planta","amazonas","mexico","fermentacion"]},
+gravedad:{t:"Gravedad",c:"Ciencia",s:"Fuerza que atrae las masas entre sí; Newton la describió y Einstein la explicó como curvatura del espacio.",l:["newton","einstein","tierra","galaxia","ascensor"]},
+newton:{t:"Isaac Newton",c:"Personas",s:"Físico inglés que formuló las leyes del movimiento y la gravitación universal.",l:["gravedad","fisica","color","reino_unido","matematicas","manzana"]},
+manzana:{t:"Manzana",c:"Comida",s:"Fruta de clima templado; símbolo de tentación, gravedad y una marca de computadoras.",l:["newton","planta","fruta","computadora"]},
+fruta:{t:"Fruta",c:"Comida",s:"Parte comestible y dulce de una planta que contiene las semillas.",l:["manzana","planta","uva","tomate","azucar","banano"]},
+banano:{t:"Banano",c:"Comida",s:"Fruta tropical más exportada del mundo; Ecuador y Colombia son grandes productores.",l:["fruta","ecuador","colombia","planta","mono"]},
+mono:{t:"Mono",c:"Naturaleza",s:"Primate de cola larga que vive en selvas de América, África y Asia.",l:["primate","amazonas","banano","africa"]},
+planta:{t:"Planta",c:"Naturaleza",s:"Organismo que fabrica su alimento con luz mediante fotosíntesis; base de casi toda cadena alimentaria.",l:["fotosintesis","bosque","flor","agricultura","oxigeno","fruta","biologia"]},
+fotosintesis:{t:"Fotosíntesis",c:"Ciencia",s:"Proceso por el que plantas y algas convierten luz, agua y CO2 en azúcar y oxígeno.",l:["planta","luz","oxigeno","carbon","sol","agua"]},
+flor:{t:"Flor",c:"Naturaleza",s:"Órgano reproductor de muchas plantas; su color y aroma atraen a los polinizadores.",l:["planta","abeja","color","perfume","primavera"]},
+primavera:{t:"Primavera",c:"Naturaleza",s:"Estación en que florecen las plantas y muchos animales se reproducen.",l:["flor","verano","invierno","tierra"]},
+abeja:{t:"Abeja",c:"Naturaleza",s:"Insecto que poliniza un tercio de nuestros cultivos y produce miel.",l:["flor","insecto","miel","agricultura"]},
+miel:{t:"Miel",c:"Comida",s:"Sustancia dulce que las abejas hacen del néctar; no se descompone jamás.",l:["abeja","azucar","egipto_antiguo","medicina"]},
+insecto:{t:"Insecto",c:"Naturaleza",s:"Animal de seis patas; el grupo más diverso del planeta, con más de un millón de especies.",l:["abeja","animal","evolucion","amazonas","mariposa"]},
+mariposa:{t:"Mariposa",c:"Naturaleza",s:"Insecto de alas coloridas que nace como oruga y se transforma en la crisálida.",l:["insecto","flor","color","mexico"]},
+bosque:{t:"Bosque",c:"Naturaleza",s:"Ecosistema dominado por árboles; cubre un tercio de la tierra firme y absorbe CO2.",l:["arbol","amazonas","planta","hongo","lobo","madera"]},
+arbol:{t:"Árbol",c:"Naturaleza",s:"Planta leñosa de gran tamaño; algunos viven miles de años.",l:["bosque","madera","planta","oxigeno","fruta"]},
+madera:{t:"Madera",c:"Materiales",s:"Material de los troncos; el primer combustible y material de construcción de la humanidad.",l:["arbol","papel","casa","barco","guitarra","fuego"]},
+amazonas:{t:"Amazonia",c:"Lugares",s:"Mayor selva tropical del mundo, repartida en nueve países; alberga una de cada diez especies.",l:["brasil","colombia","peru","rio","bosque","biodiversidad","caucho","mono"]},
+biodiversidad:{t:"Biodiversidad",c:"Ciencia",s:"Variedad de la vida en la Tierra; Colombia y Brasil están entre los países que más tienen.",l:["amazonas","extincion","colombia","biologia","bosque"]},
+agricultura:{t:"Agricultura",c:"Historia",s:"Cultivo de plantas y cría de animales; hace 10.000 años convirtió a nómadas en aldeanos.",l:["planta","trigo","papa","vaca","revolucion_industrial","abeja"]},
+trigo:{t:"Trigo",c:"Comida",s:"Cereal domesticado en Oriente Medio; base del pan, la pasta y la cerveza.",l:["pan","agricultura","cerveza","planta","pasta"]},
+pasta:{t:"Pasta",c:"Comida",s:"Masa de trigo y agua en mil formas; símbolo de Italia aunque los chinos ya hacían fideos.",l:["trigo","italia","china","tomate"]},
+italia:{t:"Italia",c:"Lugares",s:"País mediterráneo con forma de bota; cuna de Roma, el Renacimiento, la pizza y la ópera.",l:["roma_antigua","renacimiento","pizza","pasta","leonardo","piano","volcan","europa"]},
+roma_antigua:{t:"Antigua Roma",c:"Historia",s:"Civilización que creció de aldea a imperio mediterráneo; nos dejó leyes, caminos y latín.",l:["italia","derecho","latin","estadio","europa","esclavitud","vino"]},
+latin:{t:"Latín",c:"Ideas",s:"Lengua de Roma; madre del español, el portugués, el francés y el italiano.",l:["roma_antigua","espanol","catolicismo","lengua"]},
+lengua:{t:"Lengua",c:"Ideas",s:"Sistema de comunicación humano; hay unas 7.000, y una muere cada dos semanas.",l:["espanol","ingles","latin","cerebro","escritura"]},
+escritura:{t:"Escritura",c:"Historia",s:"Representación del lenguaje con signos; inventada en Mesopotamia hace 5.000 años.",l:["lengua","papel","libro","egipto_antiguo","alfabeto"]},
+alfabeto:{t:"Alfabeto",c:"Ideas",s:"Conjunto de letras que representan sonidos; el fenicio dio origen al griego y al latino.",l:["escritura","grecia_antigua","latin","lengua"]},
+espanol:{t:"Idioma español",c:"Ideas",s:"Lengua romance con casi 500 millones de hablantes nativos, la mayoría en América.",l:["latin","espana","mexico","colombia","argentina","lengua","cervantes"]},
+ingles:{t:"Idioma inglés",c:"Ideas",s:"Lengua germánica convertida en idioma global por el Imperio británico e internet.",l:["reino_unido","estados_unidos","lengua","shakespeare","programacion"]},
+espana:{t:"España",c:"Lugares",s:"País del suroeste de Europa; su imperio llevó el español a medio mundo.",l:["espanol","europa","colon","madrid","barcelona","picasso","cervantes","inca"]},
+madrid:{t:"Madrid",c:"Lugares",s:"Capital de España, en el centro de la península; sede del Museo del Prado y del Real Madrid.",l:["espana","futbol","museo","ciudad"]},
+barcelona:{t:"Barcelona",c:"Lugares",s:"Ciudad mediterránea española famosa por Gaudí, su club de fútbol y los Juegos de 1992.",l:["espana","messi","futbol","arquitectura","juegos_olimpicos"]},
+francia:{t:"Francia",c:"Lugares",s:"País europeo de vinos, quesos y revolución; el más visitado del mundo.",l:["paris","vino","queso","europa","revolucion_francesa","perfume"]},
+paris:{t:"París",c:"Lugares",s:"Capital de Francia a orillas del Sena; Torre Eiffel, Louvre y cafés.",l:["francia","louvre","torre_eiffel","juegos_olimpicos","picasso"]},
+torre_eiffel:{t:"Torre Eiffel",c:"Lugares",s:"Torre de hierro de 330 metros construida para la Exposición de 1889; iba a ser temporal.",l:["paris","hierro","arquitectura","luz"]},
+revolucion_francesa:{t:"Revolución francesa",c:"Historia",s:"Levantamiento de 1789 que derrocó la monarquía y proclamó los derechos del hombre.",l:["francia","democracia","napoleon","derecho"]},
+napoleon:{t:"Napoleón Bonaparte",c:"Personas",s:"General y emperador francés que conquistó media Europa y reformó sus leyes.",l:["francia","revolucion_francesa","europa","guerra","derecho"]},
+guerra:{t:"Guerra",c:"Historia",s:"Conflicto armado entre grupos o naciones; ha impulsado tanto horror como tecnología.",l:["segunda_guerra","napoleon","roma_antigua","energia_nuclear","paz"]},
+paz:{t:"Paz",c:"Ideas",s:"Ausencia de guerra; el Nobel de la Paz la premia desde 1901.",l:["guerra","nobel","democracia","colombia"]},
+nobel:{t:"Premio Nobel",c:"Cultura",s:"Premios anuales creados por el inventor de la dinamita; reconocen ciencia, literatura y paz.",l:["paz","gabo","neruda","einstein","suecia"]},
+suecia:{t:"Suecia",c:"Lugares",s:"País nórdico de bosques, lagos y diseño; entrega los premios Nobel.",l:["nobel","europa","bosque","invierno"]},
+segunda_guerra:{t:"Segunda Guerra Mundial",c:"Historia",s:"Conflicto global de 1939 a 1945, el más mortífero de la historia; terminó con bombas atómicas.",l:["guerra","alemania","estados_unidos","japon","energia_nuclear","turing"]},
+alemania:{t:"Alemania",c:"Lugares",s:"País central de Europa, potencia industrial; cuna de la imprenta, Beethoven y la cerveza en jarra.",l:["europa","imprenta","cerveza","segunda_guerra","einstein","automovil"]},
+austria:{t:"Austria",c:"Lugares",s:"País alpino de habla alemana, capital musical de Europa en el siglo XVIII.",l:["viena","mozart","alemania","montana","europa"]},
+viena:{t:"Viena",c:"Lugares",s:"Capital de Austria, ciudad de palacios, valses y cafés literarios.",l:["austria","mozart","musica","cafe"]},
+europa:{t:"Europa",c:"Lugares",s:"Continente pequeño y densamente poblado; cuna de Roma, el Renacimiento y la Revolución Industrial.",l:["espana","francia","italia","alemania","reino_unido","roma_antigua","oceano_atlantico"]},
+reino_unido:{t:"Reino Unido",c:"Lugares",s:"Isla-estado que fue el mayor imperio de la historia; inventó el fútbol y la Revolución Industrial.",l:["londres","ingles","futbol","revolucion_industrial","beatles","darwin","newton","europa"]},
+londres:{t:"Londres",c:"Lugares",s:"Capital británica a orillas del Támesis; primera ciudad con metro subterráneo.",l:["reino_unido","tren","ciudad","museo","shakespeare"]},
+irlanda:{t:"Irlanda",c:"Lugares",s:"Isla verde del Atlántico norte; la plaga de la papa de 1845 dispersó a su pueblo por el mundo.",l:["papa","reino_unido","europa","cerveza"]},
+estados_unidos:{t:"Estados Unidos",c:"Lugares",s:"País de 50 estados, mayor economía del mundo y cuna de Hollywood, internet y el jazz.",l:["nueva_york","hollywood","internet","nasa","democracia","ingles","mexico","rock"]},
+nueva_york:{t:"Nueva York",c:"Lugares",s:"Ciudad más poblada de Estados Unidos; rascacielos, Broadway y la Estatua de la Libertad.",l:["estados_unidos","rascacielos","teatro","ciudad","oceano_atlantico"]},
+mexico:{t:"México",c:"Lugares",s:"País de Norteamérica, heredero de mayas y aztecas; el mayor país hispanohablante.",l:["espanol","chocolate","tomate","azteca","estados_unidos","dinosaurio","mariposa"]},
+azteca:{t:"Imperio azteca",c:"Historia",s:"Civilización mesoamericana con capital en Tenochtitlan, una ciudad sobre un lago.",l:["mexico","chocolate","espana","ciudad","piramides"]},
+puerto_rico:{t:"Puerto Rico",c:"Lugares",s:"Isla caribeña, territorio de Estados Unidos y cuna del reguetón.",l:["reggaeton","bad_bunny","mar_caribe","estados_unidos","espanol"]},
+panama:{t:"Panamá",c:"Lugares",s:"País del istmo que une las Américas; su canal conecta dos océanos.",l:["colombia","reggaeton","oceano_pacifico","mar_caribe","barco"]},
+libano:{t:"Líbano",c:"Lugares",s:"País mediterráneo de Oriente Medio; su diáspora, como la familia de Shakira, vive en todo el mundo.",l:["shakira","alfabeto","oceano","arabe"]},
+arabe:{t:"Idioma árabe",c:"Ideas",s:"Lengua semítica de más de 400 millones de hablantes; nos dio palabras como azúcar, álgebra y ojalá.",l:["libano","lengua","cero","azucar","espanol"]},
+india:{t:"India",c:"Lugares",s:"País más poblado del mundo; inventó el cero, el ajedrez y el yoga.",l:["cero","ajedrez","everest","te","asia"]},
+china:{t:"China",c:"Lugares",s:"Civilización milenaria que inventó el papel, la pólvora y el té; hoy segunda economía mundial.",l:["papel","te","everest","asia","cohete","pasta"]},
+japon:{t:"Japón",c:"Lugares",s:"Archipiélago del Pacífico; tradición milenaria, tecnología punta y videojuegos.",l:["videojuego","volcan","terremoto","oceano_pacifico","asia","segunda_guerra"]},
+asia:{t:"Asia",c:"Lugares",s:"Continente más grande y poblado; hogar de China, India y el Himalaya.",l:["china","india","japon","everest","te"]},
+africa:{t:"África",c:"Lugares",s:"Continente donde nació la humanidad; el más joven y diverso en lenguas.",l:["egipto_antiguo","chimpance","desierto","etiopia","esclavitud","oceano_atlantico"]},
+etiopia:{t:"Etiopía",c:"Lugares",s:"País del cuerno de África, cuna del café y de algunos de los fósiles humanos más antiguos.",l:["cafe","africa","fosil","evolucion"]},
+australia:{t:"Australia",c:"Lugares",s:"País-continente del hemisferio sur, con canguros, koalas y el arrecife más grande del mundo.",l:["oceano_pacifico","desierto","animal","reino_unido"]},
+grecia_antigua:{t:"Antigua Grecia",c:"Historia",s:"Civilización que inventó la democracia, el teatro, la filosofía y los Juegos Olímpicos.",l:["democracia","teatro","filosofia","juegos_olimpicos","geometria","alfabeto","medicina"]},
+filosofia:{t:"Filosofía",c:"Ideas",s:"Búsqueda racional de respuestas sobre la existencia, el conocimiento y el bien.",l:["grecia_antigua","conocimiento","tiempo","infinito","ciencia"]},
+ciencia:{t:"Ciencia",c:"Ciencia",s:"Método para entender el mundo con observación, hipótesis y experimentos.",l:["fisica","biologia","quimica","matematicas","filosofia","conocimiento","universidad"]},
+catolicismo:{t:"Iglesia católica",c:"Ideas",s:"Mayor confesión cristiana, con sede en el Vaticano y más de mil millones de fieles.",l:["latin","carnaval","navidad","italia","matrimonio","edad_media"]},
+edad_media:{t:"Edad Media",c:"Historia",s:"Periodo europeo entre la caída de Roma y el Renacimiento: castillos, catedrales y peste.",l:["roma_antigua","renacimiento","catolicismo","peste_negra","universidad","castillo"]},
+castillo:{t:"Castillo",c:"Objetos",s:"Fortaleza medieval de piedra para defender y gobernar un territorio.",l:["edad_media","piedra","arquitectura","guerra"]},
+microscopio:{t:"Microscopio",c:"Objetos",s:"Instrumento que amplía lo diminuto; reveló células, bacterias y un mundo invisible.",l:["celula","bacteria","vidrio","luz","telescopio"]},
+telescopio:{t:"Telescopio",c:"Objetos",s:"Instrumento que acerca lo lejano; Galileo lo apuntó al cielo en 1609 y todo cambió.",l:["vidrio","estrella","galaxia","chile","nasa","microscopio","luz"]},
+vuelo:{t:"Vuelo",c:"Ciencia",s:"Movimiento por el aire; insectos, aves, murciélagos y, desde 1903, humanos.",l:["ave","avion","aire","leonardo","insecto"]},
+avion:{t:"Avión",c:"Objetos",s:"Aeronave más pesada que el aire; los hermanos Wright volaron 12 segundos en 1903.",l:["vuelo","motor","aire","viento","aeropuerto"]},
+aeropuerto:{t:"Aeropuerto",c:"Lugares",s:"Instalación para despegue y aterrizaje de aviones; el de Atlanta mueve 100 millones de pasajeros al año.",l:["avion","ciudad","estados_unidos","viaje"]},
+viaje:{t:"Viaje",c:"Ideas",s:"Desplazamiento a un lugar lejano por placer, trabajo o necesidad.",l:["aeropuerto","barco","tren","playa","mapa"]},
+mapa:{t:"Mapa",c:"Objetos",s:"Representación de un territorio; los primeros son babilónicos y hoy caben en un teléfono.",l:["viaje","tierra","papel","satelite","geometria"]},
+burbuja:{t:"Burbuja",c:"Ciencia",s:"Esfera de gas encerrada en líquido; su forma redonda minimiza la superficie.",l:["esfera","agua","aire","jabon"]},
+jabon:{t:"Jabón",c:"Objetos",s:"Sustancia que limpia al unir grasa y agua; salvó más vidas que muchos medicamentos.",l:["burbuja","agua","quimica","medicina","enfermedad"]},
+ceramica:{t:"Cerámica",c:"Materiales",s:"Arcilla cocida a alta temperatura; vasijas, ladrillos y azulejos.",l:["horno","fuego","arte","piedra","china"]},
+}
+
+// Retos diarios (365). Guardados ofuscados con clave derivada del número de día; solo se descifra el reto de hoy y los anteriores.
+const PAIRS_ENC=["6b971195d6a08896a8e0f26a78caa886ef8c3ea0","6fa5bac12f5852476ed659bcc5786498","f54cfe27efd294f4493e","b6ea109e995b18e45d4bfb844a","caaefd98396f401b309b97f62b569a33e00bf6cf","dcea38db7bd5e0cb44e84f","a5fdf705c46e357eda9a2fa7","b6907559b73eda170d8b569eaf170a05a8","4c6816e62b6e7b72c41d5d66aad55320a9ff34fd5c","44298d30793125cf26d0552b0f","c5e8b5b35757b8ab6ab8a40a839bb0fe5bab51ddab","e4ce5b2ea6e3a9347370b1b8","d8f378b284f4d3672ac0a7f60a86c605ae85177966","aecfcd933c05e6ee3a","1695ff5f6c84e20efca38541c4f4cf10ea3f","cfc8fe5d978c891cf54bc612c19113d5736282322d558fdcb96486d9","c241c8ab652b47ce953311130baa8544f805ba3785d506","5603eefbf1a114b16d79d659","a69957b694b344e8f25ba549","fbd30b09fefc319eba2107f633540abf16c4102ec4","4c878f8d22faf6a26d31c99166eb5bb8f7","1d27bae6ba1bddaa0f16e7e6587999502ff2","be540e6881ca2a55fe3c38f971","0b245358e299a4708c75e0e8","7ba23d56df5ae3d9055727a5c029","05f8b2bb7f23bc8aac4be74afa","766a779fecc66177550d1e1a6489bd","85fb8a7dbe8417dfb136f75783","b51d88762548d526b0b6b88ffc4516","3c25edc391b6fa7d89e2974cf6","4fec1333c783c790f0ed6039880f","023128ce67df387a38605c6f7e6a30533ca47f395156","a8d9e5706a967651262c24a7d1441a071c","5e5b047bc9e4526d161fb49f6be7af5bb293","c9fbe696fc43023fe1c2baec424fc06dd7ab","d63f42798630ff7c1c144986","8e7bc544ed43997bc6d0444340","436fc259033a562d4cb530","75ee0b67f32557276dcb0aad3fd7","a35e1d66cc5993c4b720facf1f8018d58b","04fcc815f80360e3f2bc0b463ed9e4ddf3cbf514b05a","900bdbeae79d95d3ca8686","a962755343b61992032a64de47239540b03b5b00a2","0508ca5baff031bfbde7141135bcdf322c","867cec8df314c111637a4c24eb0e77","7972f612446f904bb5346c064cca23ae","a914e263324405e75a38d7dcf7a5","69ae922c5466ae9667ced7cf1694","9e3b53f2e4ac9b52cd8ab906ea4b","ea3a7ace1f61775fe63001ecf201084f048f","7f9efd9b23291d8b2503b7","53b43bbabb2a4644f15c275435f88668599886","15a5fe8f3b0f468b2bbe45a0263fc80e165885","6e8ef0a80766fe6c52bf14a7","ca06a215c81aedb3dc220cfdca6b8d7ddede50","8eeea30cabcb3550631c6ebc409f","b2c7b5bd323cda595e1584","f1ee5921caa7039fff0c","5aadae8eec1e2adc882de3127ef835ae5935e8be","f32d3b1a94ef33f7d8872da5862f21","40c34cdf04ac37452b7c1bc1","ceec90426ffe4ce2d39253f782bb1fbe","316eafc44c7bbf621de9b1ce7f","90f7ef0ac8e740981ce668d9","479c3429646fc8a5503bd0354f","1c57f0ff892540439156100a00b53b","bcb59366f7ad8be5482d94a8dc60","2b7c10872f80d5361c7340501c79b4","44ce6a6ad18f445022c023fad6a0","37c1bb65b0fa03","10e929b6753c23c33d53e0e7b847bace29","597959a73b1df8785e67cb0f25c51362a60e03ff","03df5ad502b1cf4ad22ab0b73965bdfc","aaf088851dbf419ade28e5bf350cb871","33543c57a77a3f18a13cc2e2733cac91446d24ec","963ff6951e8f5aef9bfd2499936ecbfb","e05b50e9cdc0952d692dc668ab","523a34693f24b3d30352740754f947fa2b24119a1ac94d56","a0cef14f584cbf76822ae6a94836c3","ee9716d68de46461822782eb2d654541f251e0057457c2","a0f2fe65fc333deb06f45dd3c3df","07df068ef47bd0901234973bffc886d780ef04","131ef51c3d82fd8f","ea49e9cfad2128f905e269625272037b3d4693b36c110a","3bda970941aad702eea2c5d7f1643997b6cd0fd796fc","9b923787c0b8550fbc82de33661cee","b5b756a791b03516f16355f0c79cb574bc","c3bb43ef7a6b14edc6eb984d37e90c543b768a68bc89","c38523169176","85773d8b7f97d458511bbe1d0b32bc","eca731418b0174b8be2c4fe04c1016048c889e874a","32240e1254fd0d706bafc707ff","f5aa7ccc51a59d9ac07d2ffc44933e833d","d8a596383e7bf04a12cde84239","72034488aac9a1e43bed422f69edbb","1f4f7266417c5a8478c1ddb93d39473d33b43977","1e544de7220560c638fa49e8cbd9c1b8ab67bfc56d","ea56972f14bf5f3c9951254a3087679ece","6174e81eeb1bf414afebf8380a8f3a1c","087c1795e35e102ed5bc0bf16bb73c40547b","38b34a65d08e3ce6fbd64635","4ac1a3b0954d7127a663f1ad430fd11e65314c7dad4e","bba43f5b0ee996cf7957159f","79795f27f5c40b2e6c4c02ea","849e1e452ea32128c991c8d6d1df0370e5e5d2","c72d3663af10fbba231463330d88","4bfc41fa6e86ba78d7979e0f","e07682e4cbf0762ae43995","074e79df15c4e2f9519cded522833081f1903307dbfc6df46e0e691c2ef1bd","0569401e04dcc825e4319bc188ad351d30","2a79b0addc40efccbef3431c1efc97ae1148","ee787aaac0a424dd4d2f7447d857","291ace86aae79af5b4d0e4e6ac7181","f256e25080176f5ec7c79a50c0","dc6ed115d8015a15f9abc631a0","e41f4acfc1997fcc9fbfb30f44","ad1e7f8506124fd133f407ed","ce14150b46cb4c25236d9a452ecad593398ccf","236da565c3a35d9959937f57f0e8","dbb56b13ba744e67f68ee7d0","4af755b36769fe82869d11b2ff","ac309437185f4913481b91","cf44daceb00ecbeff506","aec8bd758125fdc08bf68df26ff22a","910cd9fd2a393943","9a1b4d78b8cd0107e1ab97","4d0e63454e7eb1110863d7bced2aa034","426c711e3f394293bc3c","48194366408e128e56ac5076b3b7f324c32d2ef03a86d4","ad37724e933966198c","44f402c4ad030d039094aa0ed0acfb25aeb1","a8ebd41258a9863890ad7725a9d0","8717da46c494ea12e7244b753056a28f490e66","e32c44ca1b1ff1c2c314c096b30be9ae","516ebd436401050f9f558697ecea3b54a6fa","9d07e3af4ac8a783f864","22127d97adac82396e51ec17","8bae525da8874d5e3204c93ed1a4188cbf","fe27238718dae9c157c20d","0795b17f17a8f0db0a","df70ec1f9b36a284c4dc0910d5076f4049bb2a26b144","82faa458cb5905237008450947","19fe8846c93ee8167d6e6b76f40f4792d4f692","344b7e377ccb01274fe6c72aeccb","91c767a1481ecf93b7378c","8ff016f06e4e7205708c05e38c08","a6f7fec7ed8a123cc421110d52","6d98e742443add8e0dd0aa764a5892","583eb85cb30ab9c9b143b4223fd7","342bdbcea7035ed0aedf9b47f96229475e","40e11276d1134a4d79fdd419c195b385fef3","da2b7e62db8a8a36dd","920ac85963288e9ce21f4e2ce34ddeb3","01fd866810e298e0468363714ce0e2942df58566ac311a","05eb9d38b280af3ff22e","5daf7c0665aecfc8b105ab","4854f7727f7b42c8209ece3a","cc8eb1935f246bc522a2aa","203a02841ea1c6f81bb184aa","c0132b85f3e4a42b879bc83136fc","efd5f9809b8ddf5d1513d933","4686ad862658d11ebb1b5e39fe3b4984131b","db92f10c445120f892b5d802336bd0","4123b6c47b900a57897f79bc214ba1","700e838d611b4555cdaba2","76c149f55044811edaaeb450ae","91a70fe03cbd9d510dfa806f1aea207a","40871696614d0b5f531ef90df8","71f1bf0216130670483c0a6c00","aa2a951c84371c66f743623f","a43e80deda25999a1ac6ffbced","dbe59cb84c83c3ce2e61c12fb3","df5433d9f4add9c1645f02487e27acbbbf","5fc4a8f6c6aff8a95c24848018e0","c34a524821bcd727915b23cce43d2a","9c8130b805829bd3601b786422","6cc2f347faf242b10d53634a6d","3b8937d37d40098329c7ee305e4a1016278ba5","3b886e26820433d91dcb9294","6b6ff4198c63feb5e42793676a","771a2be9167f35c613ee4a6c29ec5844","dc8bfcd1d078516f5cbb2a4f66c529fd06","cf4376795a2b476f98d51e1f4f08136c08","4876f3c3ec4282be0b953491e63ff21168e58a16f776","68f7bfa9d02537f1dd","b565d5e91513f1de080af01c342cb1da63451c","d90abecec5de6772d0ef","59c5177e1188422b61807249da","c3f9e94f7a8cd136d46364707ce8ea","3613c968d29f507852dc9dd06c8238cc68c7a7","6bd34295bb91d053fd66ed54","89e7eadb4030b5aedb242a","3d1cc11b6156eab89c25b6cadc","a055335272f03a8ed1e70ac7c47d84dca65c","dd9029bb4a71d5ab9de0","5e02a857a121ba83b32d55a5","577a58ee63eae2748ff04aac33c9b7448ef330","165a9f74167aa100012cba5f2f9691","fc0a98265c71f276da58400ea3a2","1e9577bf63abb60f0f25729da284de133ffe","92f4d64c1d02b5d49736e9e7420471","30aca462387008758d05ace215fa84","ff3dc1247f9a9e91fd83df","6bb2058d6303ddf56fe5b6b6cad2273285ad1f","553cc5231362494050a92ab84ca6","a64721760bdbdf64c903","44c418f7198dc4733b63cacda3e2","41d4fc0bd038adab9185e9cd","39d24f8b1abeb4d90410ece9b733a426a3656401c27c7adecdb9a8ab2ec52c986cbe9db6","09a07d308ebf69eccb3736c149933309bc","1961ab3d103ba5513cfb4dfebe4e","636f4430f1c1f6f94914fc85ec","a576d3a24ae28ae759c5c5a15983","412c4a5f234fa5c51c383e27a8","96450705959f75e3878b7a25d628f8fedbc8c4420cfde47e184ae1f6c6","87bfd6af79b220fd0ecab32f93627b76","752e6c12ec07399a1663c9f4e3bb7fce","a263abd3754dcdc82776a120eb342288","81411f54ab94019a98b13dbad955a828117cfb95f7","2557a5d72ba09d98b27bd36e0051a679dc31aae3","a2691cc9ddba9e68eaffdc8d33","f7bdf0fff3200ad1714b13956c583d05f641e095c24ef8","85164dc47c4fd7ef5fba26943f611b8ab2e675e014efabf6","f9b753f1a2aaad3479e45ddf6a74909e0579","81fe1eb8fb32171d48f4d3fd6ab4a6ad0885","70cc37478201e5366c627720a46bb5","ddde5c701c4a31cd3dc7d9fea8fa87522d1606","364699eb9e119038a293d2c8","60f6a2b6e596311852c0ed2956717a44da","bd35e89384c0593540848df7ed6493","ba9c983b9c2b79f6ad3d195f","a6a9890fc09fdf44b61043de5609","c05dafbb01200f9338645f92","f9982fa64357d5966b840c3c0dfeb6048b","5e1dc39bf50ce43e9a4ab5eb954bd844c7","36bc3fc793408519708f06609b602a3d64c87677a5e7","5d74ed62f4489b30cd4eac2425ad","946400f80e87ae2fe2ef","6023f2f2d2146944b0fa8d7565dc6431d85fec","4e5fd53ba2971149f83b25213a6986","89659751e8a848d0c9323bbd16d0389b20e678d1","4b0489ceffef6283c216b1e9","9cc4853f855d7b84012d164a","27639b797a7c0c35fb612353831e6bfd","de50fea0ff9620af709b5082","30cac3d5a3c37523b5d82c4b2087119460ce4628a9","4a4d0b06ddd7b24b9d5f230e55baab6d4b23c16296a951","3fca21f79c8e3e1849454658e450a2","5c23ad2ee323b5ae22","580341a1edb02eaac610e3","a2e4998c8f58f2aa9cd8","b99ddb05a5362295bd61f2da9c","ef0275e93420c4054ba666762f","fc2feca5e3427a9e76dbf588d9e4","9e1180d61794b59ffd1c8ccf0f003e","6975c230de9364129a17f190","acf31f633eade1c1d0498817","762cd12940db0ff3cfb98b0299b8","9daac4f8e161c497767a6ac607dcb351a9c272","71a66ea354572159611cbbaab5d69f7104","8baddfc97941e26b1aabade09ce68f6618285013","2ee5a38eaed7e1b5e333aeca2b3685ac4c8f7f28361a","a65ac2cb1d38d0375d5dbba6355cd3","dc949923ffd1aeb0f9cb1d1a0509","61bf102449d6891984d9bdcc0901","170876630b78cbbc628d9ee3","7ab141476a295df67d43d2c1d6","0bba561b2a18ac0e7e156ee593ad99","80d7623a32cd07444c096f","239e19b102c5a0c15f22c982e9701f79690f4654f7","6770ad74601411f819e5dad5713929a555","a5c60c92cf60bc4aca980da0d74b","d079643cc8e71de90bc2ced59dcb2be1","995069bf833cfbd8250a0d47c351f16fb062a4fc07d5782416b2","961c1a7a14ecf4e9774ad3","960f7f008b41e9de7f","d5a747ebdb785db8683c0b83060ac9563a3b","4260a41786c2c82cf6a5f8c4d81404fa22e309","1b8911191d26a94da6a5f849a53a3a","c8c4995addabf7c7be2b7b","0cfe7ab41b1f26d7eb624e79bd9fd5e1","fedf84f3985e7c2a45750a503b","aa112a22bebbc4c7c87e69c1eeee14bca8","6c74971cca6c63433ca847c0c79ebae8d0ed","5b3a4ee0592d046fb6b02e35","76142afa565b1fb843a07e27","5dc25b3749a15cd15853f7e4fb9bd7","43602dca395268a20a95e7ffc5b8fe14","1903c1de87d3a2733cae2d7e547fd51c","bc2e7af34fe72c425bd88558e40b0d77c49f04bd","224ede82addebf2a2f69e6","a6bfb118c80c72aab7b9634f4bf3359e9a1771d2","51c85d413c85365f853945742de0c07a5eab","ffc11a434f2948512380071a92857b16e34f","92a1cc9fa271591f3092800562ccd4d9","e62110082598109d824a82fd5da3db67","a1e2dd4f0bcb8d5fdff6b80a41692e42","c5721e072fdd6b7039436552760331f7c9fb","b575ca58bb0d3f85615b00c4ecb19678","94dd66d458c3835e2ff0c1efc096734a60a9","36b208723660252457a89a0b754f996599a6","c24d30f3eec466c017152e13","21e8e754b42fcea461a86eb0feb2d6a22d","a38641b36a4ec766b62e0a1e677cccda8378","d54d15e11b92ebbd9a00ef18084a2b89","7c500c74bb3f1d5c257bb0f1f769d9ea1cd4","39f1796df36342d7e83080269957d1d44fb201ff","d17e46d61394a950aa0547b2e3e7f7","f4d92698a8d0d985dd0da345a73083","90a74eeaaf27fc55651d76050bb73a","8f7cb91a71800f52c37379","275e88a36c01624cbde8025e1035543e93a2","3782fb70844cbf1ede70ff82fcc03f6999e7","b7a6e364c0e76df764527120ec21cff809","4d9af890977132f89f04ba3d","b3f793862a680abdac989f21e2a58d9d862bcc232f","751d1c8e9f8d2b7fce8d037f59694b","68e553a62b884c3edb4777255d8e5d47aa53d53789affc47","5ba2ec6a09bd21111f0be3f77f6829aa","30a8b56425c6c40abcf8","c1492161fed14527fcbd7a","3f6b8e166b3016e7a8849677c8a1","f27094983746928773cbffe2c7cb64","55b9bbeb87b2582bdd9e9d8de4957c","7b578e37ed71fb9e91965c","71b556d511a2f892221b8cf06a6a82","804882337455a8cc5d9fa2a390ebab","6cf78549f16557b5b43b","04434390df53709c3dda98","543b1a431f499c3b87fd2364","b16635003bcf4e5da0f2a02cb5c1db79f045","9a498964022b651e6a8646bd3ff51a9c52","7650205fc15ef8718e2bc6","57c863de711a84e13b7488eb43","9ac6e5525720ee79a00c49e5c63b","36c2811a65c1d02f4c44e3","b541e4f53f15f39fffdab6","ba886362e17d7384f25ad7a0cca98e","21bfcf6d07240b0f8e94","9f3528ba88717ed5c6ed3f6247","f200ab39171804302125","8948f1c6eed9bb028e828e77f18b","5d4f75b340ded4b0e5cdcecff29c","b18f2c0e74ae585a6678e9e8fdb1","16f5c731dd99d078628819e416ad7d","f4fc3fa5d6cc0178c2499157e8ed1a5d","54b616df7f1b843ed5394a5688","935d62657cc5a7757934438290305040d7","f905c0a992dd9016501dfcf9cf2efb2e1e12c5b862","8649a6c924414d037cbcf6b3","f4f31618f7a4e81e4559e447ad82de2be0","213c8a715246ffed96a31b","b663a7ce682c24bb8925e6e51001f031","e2e59d125e9a6a568c238d0222bfaa","b161fba6a3815c57c8e0bbb149","d5981a569102869aec31b2c10f","a03e9389c1da21c89f9983b7","5d84a6ef50b545a5a05baf606b58ae7bab869e033ca09185d5","f8f100fcf55a60aa964dd5dc71","89083d18d14bc278586ee1","a5d37e113e65b4b0f10052","013744a63f0d319c52230965e2949f55","1a9c90686a52d1be309f4059a8828e5a","12c5fb142d43dc858e3ca25a202d3ffc","9e146e2d38a75f3b953b79b4a4e5a38bb5020da2ef8e3e8c30fe"];
+function _ks(n,len){let h=2166136261;const s='wikisalto·'+n;for(const c of s)h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;const out=[];for(let i=0;i<len;i++){h=Math.imul(h^(h>>>13),1274126177)>>>0;h^=h>>>16;out.push(h&255)}return out}
+const _pc={};
+function pairFor(n){if(!Number.isInteger(n)||n<1||n>dayN)return null;if(_pc[n])return _pc[n];const e=PAIRS_ENC[(n-1)%PAIRS_ENC.length];const b=e.match(/../g).map(x=>parseInt(x,16));const k=_ks(n,b.length);const p=String.fromCharCode(...b.map((x,j)=>x^k[j])).split('|');if(!G[p[0]]||!G[p[1]])return null;return _pc[n]=p}
+const EPOCH=Date.UTC(2026,8,6);
+const todayKey=()=>{const d=new Date();return Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())};
+const dayN=Math.floor((todayKey()-EPOCH)/864e5)+1;
+const $=s=>document.querySelector(s);
+const ls={get:(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const reduced=matchMedia('(prefers-reduced-motion:reduce)').matches;
+const SITE=location.href.split('#')[0];
+
+/* ---------- usuario temporal ---------- */
+let pid=ls.get('pid');if(!pid){pid=Math.random().toString(36).slice(2,10);ls.set('pid',pid)}
+const ADJ=['Veloz','Curioso','Astuto','Errante','Nocturno','Lúcido','Brillante','Inquieto','Sereno','Audaz'],ANI=['Zorro','Búho','Colibrí','Jaguar','Pulpo','Cóndor','Lince','Delfín','Ocelote','Tucán'];
+function tmpName(){let n=0;for(const c of pid)n=(n*31+c.charCodeAt(0))>>>0;return ANI[n%10]+' '+ADJ[(n>>>4)%10]+' '+String(n%900+100)}
+let name=ls.get('name',''),registered=!!name;if(!name)name=tmpName();
+function paintUser(){$('#userName').textContent=name;$('#av').textContent=name[0].toUpperCase();$('#tmpName').textContent=name;$('#regbox').hidden=registered}
+let hist=ls.get('hist',{});
+
+/* ---------- tema ---------- */
+const root=document.documentElement;
+function setTheme(t){root.setAttribute('data-theme',t);ls.set('theme',t);$('#tIco').innerHTML=t==='dark'?'<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5"/>':'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>';themeColors()}
+$('#themeBtn').onclick=()=>setTheme(root.getAttribute('data-theme')==='dark'?'light':'dark');
+
+/* ---------- fondo: constelación viva ---------- */
+const cv=$('#net'),cx=cv.getContext('2d');let W,H,nodes=[],mouse={x:-1e4,y:-1e4},burst=[],C={};
+function themeColors(){const cs=getComputedStyle(root);C.a=cs.getPropertyValue('--accent-rgb').trim();C.g=cs.getPropertyValue('--goal-rgb').trim();C.dark=root.getAttribute('data-theme')==='dark'}
+function resize(){W=cv.width=innerWidth*devicePixelRatio;H=cv.height=innerHeight*devicePixelRatio;cv.style.width=innerWidth+'px';cv.style.height=innerHeight+'px'}
+addEventListener('resize',resize);resize();
+for(let i=0;i<80;i++)nodes.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.25,vy:(Math.random()-.5)*.25,r:(1+Math.random()*2)*devicePixelRatio,h:Math.random()<.12});
+addEventListener('pointermove',e=>{mouse.x=e.clientX*devicePixelRatio;mouse.y=e.clientY*devicePixelRatio;root.style.setProperty('--mx',e.clientX+'px');root.style.setProperty('--my',e.clientY+'px')});
+function jumpBurst(){if(reduced)return;for(let i=0;i<26;i++){const a=Math.random()*6.283,s=(1+Math.random()*4)*devicePixelRatio;burst.push({x:W/2,y:H*.35,vx:Math.cos(a)*s,vy:Math.sin(a)*s,l:1})}}
+function frame(){
+  cx.clearRect(0,0,W,H);const dpr=devicePixelRatio,link=150*dpr,al=C.dark?.22:.16;
+  for(const n of nodes){n.x+=n.vx;n.y+=n.vy;if(n.x<0||n.x>W)n.vx*=-1;if(n.y<0||n.y>H)n.vy*=-1;const dx=n.x-mouse.x,dy=n.y-mouse.y,d=Math.hypot(dx,dy);if(d<120*dpr){n.x+=dx/d*1.2;n.y+=dy/d*1.2}}
+  cx.lineWidth=dpr*.8;
+  for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){const a=nodes[i],b=nodes[j],d=Math.hypot(a.x-b.x,a.y-b.y);if(d<link){cx.strokeStyle=`rgba(${C.a},${(1-d/link)*al})`;cx.beginPath();cx.moveTo(a.x,a.y);cx.lineTo(b.x,b.y);cx.stroke()}}
+  for(const n of nodes){cx.fillStyle=n.h?`rgba(${C.g},.85)`:`rgba(${C.a},${C.dark?.7:.55})`;cx.beginPath();cx.arc(n.x,n.y,n.r,0,6.283);cx.fill()}
+  burst=burst.filter(p=>p.l>0);for(const p of burst){p.x+=p.vx;p.y+=p.vy;p.vy+=.05*dpr;p.l-=.02;cx.fillStyle=`rgba(${C.g},${p.l})`;cx.beginPath();cx.arc(p.x,p.y,2*dpr,0,6.283);cx.fill()}
+  requestAnimationFrame(frame)}
+setTheme(ls.get('theme',matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'));
+if(!reduced)frame();else{for(const n of nodes){cx.fillStyle=`rgba(${C.a},.5)`;cx.beginPath();cx.arc(n.x,n.y,n.r,0,6.283);cx.fill()}}
+
+/* ---------- lógica ---------- */
+function validRow(x){if(!x||!Array.isArray(x.path)||typeof x.hops!=='number'||typeof x.ms!=='number'||x.ms<0)return false;const pr=pairFor(x.day);if(!pr)return false;const [o,d]=pr;if(x.path[0]!==o||x.path[x.path.length-1]!==d||x.hops!==x.path.length-1)return false;for(let i=1;i<x.path.length;i++){if(!G[x.path[i-1]]||!G[x.path[i-1]].l.includes(x.path[i]))return false}const b=bfs(o,d);return !b||x.hops>=b.length-1}
+function bfs(s,t){const prev={[s]:null},q=[s];while(q.length){const u=q.shift();if(u===t)break;for(const v of G[u].l)if(!(v in prev)){prev[v]=u;q.push(v)}}if(!(t in prev))return null;const p=[];for(let x=t;x!==null;x=prev[x])p.unshift(x);return p}
+function fmt(ms){const s=Math.floor(ms/1000);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')}
+const wiki=id=>'https://es.wikipedia.org/wiki/'+encodeURIComponent(G[id].t.replace(/ /g,'_'));
+let S=null,timer;
+function elapsed(s){return (s.el||0)+(s.t0?Date.now()-s.t0:0)}
+function pauseClock(){if(S&&!S.done&&S.t0){S.el=elapsed(S);S.t0=null;if(S.daily)ls.set('hist',hist)}}
+function resumeClock(){if(S&&!S.done&&!S.t0)S.t0=Date.now()}
+document.addEventListener('visibilitychange',()=>document.hidden?pauseClock():resumeClock());addEventListener('pagehide',pauseClock);
+function randomPair(){const ids=Object.keys(G);let a,b,d;do{a=ids[Math.random()*ids.length|0];b=ids[Math.random()*ids.length|0];const p=a!==b&&bfs(a,b);d=p?p.length-1:0}while(d<4||d>6);return[a,b]}
+function streak(){let n=0;for(let d=dayN;hist[d]&&hist[d].done&&hist[d].daily&&!hist[d].gaveUp;d--)n++;return n}
+function show(id){for(const s of['intro','play','done'])$('#'+s).hidden=s!==id;$('#trail').hidden=id!=='play';window.scrollTo({top:0})}
+function countdown(){const n=new Date(),m=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1),s=Math.max(0,Math.floor((m-n)/1000)),t=[s/3600|0,s/60%60|0,s%60].map(x=>String(x).padStart(2,'0')).join(':');for(const el of document.querySelectorAll('.cd'))el.textContent=t;if(s===0){if(S&&S.daily&&!S.done){toast('Ya hay un reto nuevo. Termina este y recarga.');$('#newDay').hidden=false}else location.reload()}}
+setInterval(countdown,1000);countdown();
+
+function showIntro(){
+  const h=hist[dayN];
+  if(h&&h.done)return finish(h,true);
+  const [o,d]=pairFor(dayN);
+  $('#iO').textContent=G[o].t;$('#iD').textContent=G[d].t;$('#dayNum').textContent=dayN;
+  $('#dateLbl').textContent=new Date().toLocaleDateString('es',{weekday:'long',day:'numeric',month:'long'});
+  const days=Object.values(hist).filter(x=>x.daily&&x.done&&!x.gaveUp);
+  $('#sPlayed').textContent=days.length;$('#sBest').textContent=days.length?Math.min(...days.map(x=>x.hops)):'–';
+  $('#sAvg').textContent=days.length?(days.reduce((a,x)=>a+x.hops,0)/days.length).toFixed(1):'–';
+  $('#streak').textContent=streak();
+  $('#startBtn').textContent=h?'Continuar el reto →':'Empezar a saltar →';
+  if(dayN>1){const [yo,yd]=pairFor(dayN-1),yb=bfs(yo,yd);$('#ydN').textContent=dayN-1;$('#ydPath').innerHTML=pathHtml(yb,yd);$('#yday').hidden=false}
+  show('intro');
+}
+function start(daily){
+  const h=hist[dayN];
+  if(daily&&h&&h.done)return finish(h,true);
+  if(daily&&h){S=h;S.t0=Date.now()}else{const [o,d]=daily?pairFor(dayN):randomPair();S={daily,o,d,path:[o],t0:Date.now(),el:0,done:false};if(daily){hist[dayN]=S;ls.set('hist',hist)}}
+  show('play');$('#goalName').textContent=G[S.d].t;render(false);paintHint();track(daily?'start_daily':'start_free');
+  clearInterval(timer);timer=setInterval(()=>{if(S&&!S.done)$('#cTime').textContent=fmt(elapsed(S))},250);
+}
+function render(animate){
+  const cur=S.path[S.path.length-1],a=G[cur],seen=new Set(S.path),art=$('#art');
+  $('#curName').textContent=a.t;const h=$('#cHops');h.textContent=(S.path.length-1)+(S.path.length===2?' salto':' saltos');if(animate){h.classList.remove('bump');void h.offsetWidth;h.classList.add('bump')}
+  const draw=()=>{art.className='card article in';art.innerHTML=`<div class="eyebrow">${a.c} · parada ${S.path.length}</div><h1>${a.t}</h1><p class="sum">${a.s}</p><div class="eyebrow" style="margin-bottom:12px">Temas relacionados · toca uno para saltar</div><div class="links">${a.l.map(id=>`<button class="lnk${id===S.d?' goal':''}${seen.has(id)?' seen':''}" data-id="${id}"><span class="k">${id===S.d?'¡META!':G[id].c.toUpperCase()}</span>${G[id].t}</button>`).join('')}</div>`;drawTrail();window.scrollTo({top:0,behavior:'smooth'})};
+  if(animate&&!reduced){art.className='card article out';setTimeout(draw,260)}else draw();
+}
+function drawTrail(){
+  const ids=[...S.path,S.d],n=ids.length,step=Math.max(96,Math.min(160,700/(n-1))),w=step*(n-1)+80;
+  const pts=ids.map((id,i)=>[40+i*step,i===n-1?22:((i%2)?32:20)]);
+  const A=`rgb(${C.a})`,Gc=`rgb(${C.g})`,S2=C.dark?'#141724':'#fff',ink=C.dark?'#F1F2F8':'#171A24',ink2=C.dark?'#9AA1B6':'#5E6577';
+  let s='';for(let i=1;i<S.path.length;i++)s+=`<path d="M${pts[i-1][0]},${pts[i-1][1]} C${pts[i-1][0]+step/2},${pts[i-1][1]} ${pts[i][0]-step/2},${pts[i][1]} ${pts[i][0]},${pts[i][1]}" stroke="${A}" stroke-width="2" fill="none"${i===S.path.length-1&&!reduced?' class="grow"':''}/>`;
+  s+=`<path d="M${pts[n-2][0]},${pts[n-2][1]} L${pts[n-1][0]},${pts[n-1][1]}" stroke="${Gc}" stroke-width="2" stroke-dasharray="4 6" opacity=".6" fill="none"/>`;
+  ids.forEach((id,i)=>{const last=i===S.path.length-1,goal=i===n-1;s+=`<g class="${!last&&!goal?'stn':''}" data-id="${id}"><circle cx="${pts[i][0]}" cy="${pts[i][1]}" r="${last?7:5}" fill="${goal?Gc:last?A:S2}" stroke="${goal?Gc:A}" stroke-width="2"/>${last&&!reduced?`<circle cx="${pts[i][0]}" cy="${pts[i][1]}" r="7" fill="none" stroke="${A}" stroke-width="1.5"><animate attributeName="r" from="7" to="20" dur="1.4s" repeatCount="indefinite"/><animate attributeName="opacity" from=".8" to="0" dur="1.4s" repeatCount="indefinite"/></circle>`:''}<text x="${pts[i][0]}" y="52" text-anchor="middle" font-size="10" font-family="Azeret Mono,monospace" fill="${goal?Gc:last?ink:ink2}">${G[id].t.length>14?G[id].t.slice(0,13)+'…':G[id].t}</text></g>`});
+  const svg=$('#trailSvg');svg.setAttribute('viewBox',`0 0 ${w} 58`);const cw=$('.trail-in').clientWidth-28;svg.style.width=(w<cw?cw:w)+'px';svg.setAttribute('preserveAspectRatio','xMinYMid meet');svg.innerHTML=`<style>.grow{stroke-dasharray:400;stroke-dashoffset:400;animation:g .6s ease-out forwards}@keyframes g{to{stroke-dashoffset:0}}</style>`+s;
+  $('.trail-in').scrollLeft=1e6;
+}
+$('#art').addEventListener('pointermove',e=>{const b=e.target.closest('.lnk');if(!b)return;const r=b.getBoundingClientRect();b.style.setProperty('--px',(e.clientX-r.left)+'px');b.style.setProperty('--py',(e.clientY-r.top)+'px')});
+$('#trailSvg').addEventListener('click',e=>{const g=e.target.closest('.stn');if(!g||!S||S.done)return;S.path.push(g.dataset.id);jumpBurst();if(S.daily)ls.set('hist',hist);render(true);toast('Volviste a '+G[g.dataset.id].t+' (+1 salto)')});
+/* ---------- pistas (gratis limitadas / Plus ilimitadas) ---------- */
+let plus=ls.get('plus',false);
+const hintsUsed=()=>ls.get('hints_'+dayN,0);
+function paintHint(){if(!S)return;const left=plus?'∞':Math.max(0,CFG.FREE_HINTS_PER_DAY-(S.daily?hintsUsed():0));$('#hintBtn').textContent=(S.daily||plus?'💡 Pista':'🔒 Pista')+(plus?' ∞':S.daily?` (${left})`:'');}
+$('#hintBtn').onclick=()=>{if(!S||S.done)return;
+  const canFree=S.daily&&hintsUsed()<CFG.FREE_HINTS_PER_DAY;
+  if(!plus&&canFree&&CFG.REWARDED_ADS&&adReady){track('hint_ad_offer');adBreak({type:'reward',name:'pista',beforeReward:show=>show(),adDismissed:()=>toast('Sin anuncio no hay pista'),adViewed:()=>giveHint(),adBreakDone:()=>{}});return}
+  if(!plus&&!canFree){track('hint_paywall');if(CFG.PLUS_URL){$('#plusbox').hidden=false;if(confirm('Ya usaste tus pistas gratis de hoy. Wikiretos Plus da pistas ilimitadas ('+CFG.PLUS_PRICE+'). ¿Ver cómo?'))open(CFG.PLUS_URL,'_blank')}else toast('Ya usaste tus pistas gratis de hoy');return}
+  giveHint()};
+let adReady=false;
+function giveHint(){if(!S||S.done)return;
+  const cur=S.path[S.path.length-1],b=bfs(cur,S.d);if(!b||b.length<2)return;
+  if(!plus)ls.set('hints_'+dayN,hintsUsed()+1);S.hints=(S.hints||0)+1;if(S.daily)ls.set('hist',hist);
+  const nxt=b[1];document.querySelectorAll('.lnk').forEach(el=>{if(el.dataset.id===nxt){el.style.borderColor='var(--goal)';el.style.boxShadow='0 0 0 3px var(--goal-soft)';el.scrollIntoView({block:'center',behavior:'smooth'})}});
+  toast('Pista: prueba con '+G[nxt].t+' (faltan '+(b.length-1)+' saltos)');paintHint();track('hint_used')};
+async function sha256(t){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+function openPlus(){$('#plusIn').value='';$('#plusModal').hidden=false;$('#plusIn').focus()}
+$('#plusCodeBtn').onclick=openPlus;$('#ftPlus').onclick=e=>{e.preventDefault();openPlus()};$('#pmCancel').onclick=()=>$('#plusModal').hidden=true;
+$('#plusModal').addEventListener('click',e=>{if(e.target.id==='plusModal')$('#plusModal').hidden=true});
+$('#pmSave').onclick=async()=>{const c=$('#plusIn').value.trim().toLowerCase();if(!c)return;const h=await sha256(c);if(CFG.PLUS_HASHES.includes(h)){plus=true;ls.set('plus',true);$('#plusModal').hidden=true;$('#plusbox').hidden=true;$('#ad').innerHTML='';paintHint();toast('⭐ Plus activado. ¡Gracias!');track('plus_activated')}else toast('Código no válido')};
+
+/* ---------- monetización: donación, anuncio, patrocinio, analítica ---------- */
+function track(ev,props){try{if(window.plausible)plausible(ev,{props});if(window.gtag)gtag('event',ev,props)}catch(e){}}
+function initMoney(){
+  if(CFG.DONATE_URL){const a=`<a class="kofi" href="${CFG.DONATE_URL}" target="_blank" rel="noopener" onclick="track('donate_click')">☕ Invítame un café</a>`;$('#donate').innerHTML=a+'<span style="font-size:13px;color:var(--ink2)">Wikiretos es gratis y sin equipo detrás. Un café mantiene el reto diario.</span>';$('#donate').hidden=false;$('#ftDonate').innerHTML=`<a href="${CFG.DONATE_URL}" target="_blank" rel="noopener">Apoyar ☕</a>`}
+  if(CFG.PLUS_URL&&!plus){$('#plusPrice').textContent=CFG.PLUS_PRICE;$('#plusBtn').href=CFG.PLUS_URL;$('#plusBtn').onclick=()=>track('plus_click');$('#plusbox').hidden=false;$('#ftPlus').hidden=false}
+  if(CFG.SPONSOR){$('#sponsor').innerHTML=`${CFG.SPONSOR.text||'El reto de hoy lo trae'} <a href="${CFG.SPONSOR.url}" target="_blank" rel="noopener sponsored" onclick="track('sponsor_click')">${esc(CFG.SPONSOR.name)}</a>`;$('#sponsor').hidden=false}
+  if(CFG.ADSENSE_CLIENT&&!plus){const sc=document.createElement('script');sc.async=true;sc.crossOrigin='anonymous';sc.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client='+CFG.ADSENSE_CLIENT;if(CFG.REWARDED_ADS)sc.dataset.adFrequencyHint='30s';document.head.appendChild(sc);if(CFG.REWARDED_ADS){window.adsbygoogle=window.adsbygoogle||[];adsbygoogle.push({preloadAdBreaks:'on',sound:'off',onReady:()=>{adReady=true}})}
+    $('#ad').innerHTML=`<ins class="adsbygoogle" style="display:block;width:100%" data-ad-client="${CFG.ADSENSE_CLIENT}" data-ad-slot="${CFG.ADSENSE_SLOT}" data-ad-format="auto" data-full-width-responsive="true"></ins>`;sc.onload=()=>{try{(adsbygoogle=window.adsbygoogle||[]).push({})}catch(e){}}}
+  if(CFG.ANALYTICS_DOMAIN){const sc=document.createElement('script');sc.defer=true;sc.dataset.domain=CFG.ANALYTICS_DOMAIN;sc.src='https://plausible.io/js/script.js';document.head.appendChild(sc)}
+  if(CFG.GA_ID){const sc=document.createElement('script');sc.async=true;sc.src='https://www.googletagmanager.com/gtag/js?id='+CFG.GA_ID;document.head.appendChild(sc);window.dataLayer=window.dataLayer||[];window.gtag=function(){dataLayer.push(arguments)};gtag('js',new Date());gtag('config',CFG.GA_ID)}
+  $('#ftPriv').onclick=e=>{e.preventDefault();alert('Wikiretos guarda tu nombre, racha y progreso en este navegador. Si activas la tabla de posiciones, tu nombre y puntaje se publican. Los anuncios (si los hay) los sirve Google AdSense según su política.')};
+}
+$('#giveUp').onclick=()=>{if(!S||S.done)return;if(!confirm('¿Rendirte? No verás la solución y el reto de hoy quedará cerrado.'))return;S.done=true;S.gaveUp=true;S.ms=elapsed(S);S.t0=null;S.hops=null;if(S.daily)ls.set('hist',hist);finish(S,false)};
+$('#art').addEventListener('click',e=>{const b=e.target.closest('.lnk');if(!b||!S||S.done)return;S.path.push(b.dataset.id);jumpBurst();if(S.daily)ls.set('hist',hist);if(b.dataset.id===S.d){S.done=true;S.ms=elapsed(S);S.t0=null;S.hops=S.path.length-1;if(S.daily)ls.set('hist',hist);setTimeout(()=>finish(S,false),150)}else render(true)});
+
+function finish(h,replay){
+  clearInterval(timer);S=h;show('done');
+  const best=bfs(h.o,h.d),opt=!h.gaveUp&&h.hops===best.length-1;
+  $('#rEyebrow').textContent=h.daily?`Reto ${dayN} · ${G[h.o].t} → ${G[h.d].t}`:`Modo libre · ${G[h.o].t} → ${G[h.d].t}`;
+  const sub=$('#rSub');sub.className='sub'+(opt?' opt':'');
+  if(h.gaveUp){$('#rBig').textContent='Te rendiste';sub.textContent=h.daily?'La solución se revela mañana en la portada. Mañana hay un reto nuevo.':'Así era la ruta más corta:'}
+  else{if(replay||reduced)$('#rBig').textContent=`${h.hops} salto${h.hops===1?'':'s'} · ${fmt(h.ms)}`;else countUp($('#rBig'),h.hops,fmt(h.ms));
+  sub.textContent=opt?'Ruta óptima. Nadie puede hacerlo en menos saltos.':`Existe una ruta de ${best.length-1} saltos.`}
+  $('#bestWrap').hidden=!!h.gaveUp&&!!h.daily;$('#shareRow').hidden=!!h.gaveUp;$('#rMap').parentElement.hidden=!!h.gaveUp;
+  if(opt&&!replay)for(let i=0;i<4;i++)setTimeout(jumpBurst,i*180);
+  drawMap(h.path,h.d);
+  $('#rPath').innerHTML=pathHtml(h.path,h.d);$('#rBest').innerHTML=pathHtml(best,h.d);$('#bestLbl').textContent=`${best.length-1} saltos`;
+  $('#cdDoneWrap').hidden=!h.daily;const [po,pd]=pairFor(dayN);$('#bTitle').textContent=(h.daily?'':'Reto de hoy: ')+`De ${G[po].t} a ${G[pd].t}`;
+  $('#boardNote').textContent=h.daily?'':'Las partidas en modo libre no entran en la tabla.';
+  $('#streak').textContent=streak();
+  if(!h.gaveUp)shareButtons($('#shareRow'),shareText(h));
+  if(h.daily&&!replay&&!h.gaveUp)submit(h);if(!replay)track(h.gaveUp?'give_up':'finish',{hops:h.hops,daily:h.daily});
+  drawBoard();loadBoard();
+}
+function countUp(el,hops,t){let i=0;const iv=setInterval(()=>{i++;el.textContent=`${Math.min(i,hops)} salto${i===1?'':'s'} · ${t}`;if(i>=hops)clearInterval(iv)},120)}
+function drawMap(path,d){
+  const ids=path,n=ids.length,W=700,pad=50,step=n>1?(W-pad*2)/(n-1):0,A=`rgb(${C.a})`,Gc=`rgb(${C.g})`,S2=C.dark?'#141724':'#fff',ink=C.dark?'#F1F2F8':'#171A24';
+  const pts=ids.map((id,i)=>[pad+i*step,90+Math.sin(i*1.7)*38]);let s='';
+  for(let i=1;i<n;i++){const a=pts[i-1],b=pts[i];s+=`<path d="M${a[0]},${a[1]} C${a[0]+step/2},${a[1]} ${b[0]-step/2},${b[1]} ${b[0]},${b[1]}" stroke="url(#gr)" stroke-width="3" fill="none" style="${reduced?'':`stroke-dasharray:600;stroke-dashoffset:600;animation:mg .7s ${i*.25}s ease-out forwards`}"/>`}
+  ids.forEach((id,i)=>{const goal=i===n-1;s+=`<circle cx="${pts[i][0]}" cy="${pts[i][1]}" r="${i===0||goal?8:6}" fill="${goal?Gc:i===0?A:S2}" stroke="${goal?Gc:A}" stroke-width="2.5"/><text x="${pts[i][0]}" y="${pts[i][1]+(i%2?-18:26)}" text-anchor="middle" font-size="12" font-family="Atkinson Hyperlegible,sans-serif" font-weight="700" fill="${goal?Gc:ink}">${G[id].t}</text>`});
+  $('#rMap').innerHTML=`<defs><linearGradient id="gr"><stop offset="0" stop-color="${A}"/><stop offset="1" stop-color="${Gc}"/></linearGradient></defs><style>@keyframes mg{to{stroke-dashoffset:0}}</style>${s}`;
+}
+const EXT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
+function pathHtml(p,d){return p.map((id,i)=>`${i?'<span class="a">→</span>':''}<a class="p${i===0?' o':id===d?' d':''}" href="${wiki(id)}" target="_blank" rel="noopener">${G[id].t}${EXT}</a>`).join('')}
+
+/* ---------- compartir ---------- */
+function shareText(h){const best=bfs(h.o,h.d).length-1;return`Wikiretos #${dayN} — ${h.hops} salto${h.hops===1?'':'s'} ⏱ ${fmt(h.ms)}${h.hops===best?' 🏆 ruta óptima':''}\n🔵${'🦘'.repeat(h.hops)}🟡 ${G[h.o].t} → ${G[h.d].t}\n¿Lo haces en menos?\n${SITE}`}
+const inviteText=()=>{const [o,d]=pairFor(dayN);return`Reto Wikiretos #${dayN}: ¿cuántos saltos hay entre ${G[o].t} y ${G[d].t}? Juega y compara conmigo:\n${SITE}`};
+const ICO={wa:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.6.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4 5 5 0 0 0 3.1.6 2.6 2.6 0 0 0 1.7-1.2 2 2 0 0 0 .1-1.2c0-.1-.2-.2-.4-.3z"/></svg>',x:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 3h3.3l-7.2 8.2L22 21h-6.6l-5.2-6.8L4.3 21H1l7.7-8.8L.6 3h6.8l4.7 6.2L17.5 3zm-1.2 16h1.8L6.5 4.9H4.6L16.3 19z"/></svg>',cp:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a1 1 0 0 1 1-1h10"/></svg>',sh:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M12 15V3m0 0L8 7m4-4 4 4"/></svg>'};
+function shareButtons(el,txt){const e=encodeURIComponent(txt);el.innerHTML=`<a class="sbtn wa" href="https://wa.me/?text=${e}" target="_blank" rel="noopener">${ICO.wa}WhatsApp</a><a class="sbtn" href="https://twitter.com/intent/tweet?text=${e}" target="_blank" rel="noopener">${ICO.x}X</a><button class="sbtn" data-cp>${ICO.cp}Copiar</button>${navigator.share?`<button class="sbtn" data-sh>${ICO.sh}Compartir…</button>`:''}`;
+  el.querySelector('[data-cp]').onclick=async()=>{try{await navigator.clipboard.writeText(txt);toast('Copiado. ¡Pégalo donde quieras!');track('share')}catch(e){toast('No se pudo copiar')}};
+  const sh=el.querySelector('[data-sh]');if(sh)sh.onclick=()=>navigator.share({text:txt}).catch(()=>{})}
+$('#inviteBtn').onclick=async()=>{const t=inviteText();try{if(navigator.share)await navigator.share({text:t});else{await navigator.clipboard.writeText(t);toast('Invitación copiada')}}catch(e){}};
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}
+
+/* ---------- nombre / registro ---------- */
+function openModal(){$('#myCode').textContent=pid;$('#codeIn').value='';$('#nameIn').value=registered?name:'';$('#modal').hidden=false;$('#nameIn').focus()}
+$('#userBtn').onclick=openModal;$('#regBtn').onclick=openModal;$('#mCancel').onclick=()=>$('#modal').hidden=true;
+$('#mSave').onclick=async()=>{const code=$('#codeIn').value.trim();if(code&&code!==pid){if(!/^[a-z0-9]{6,8}$/.test(code)){toast('Código inválido');return}pid=code;ls.set('pid',pid);const d=await dbReady;if(d){try{const snap=await d.collection('scores').where('pid','==',pid).get();const nm=snap.docs.map(x=>x.data()).filter(validRow);hist={};for(const x of nm)hist[x.day]={daily:true,done:true,o:x.path[0],d:x.path[x.path.length-1],path:x.path,hops:x.hops,ms:x.ms};ls.set('hist',hist);const last=nm.sort((a,b)=>b.ts-a.ts)[0];if(last&&!$('#nameIn').value.trim())$('#nameIn').value=last.name}catch(e){}}toast('Cuenta recuperada');if(!$('#nameIn').value.trim()){$('#modal').hidden=true;location.reload();return}}
+  const v=$('#nameIn').value.trim().slice(0,18);if(!v)return;name=v;registered=true;ls.set('name',name);$('#modal').hidden=true;paintUser();if(S&&S.daily&&S.done)submit(S);toast('Listo, ahora juegas como '+name)};
+$('#modal').addEventListener('click',e=>{if(e.target.id==='modal')$('#modal').hidden=true});
+$('#startBtn').onclick=()=>start(true);$('#freeBtn').onclick=()=>start(false);$('#againBtn').onclick=()=>start(false);
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));boardSort=b.dataset.t;drawBoard()});
+
+/* ---------- tabla (db) ---------- */
+let db=null,rows=[],allRows=[],boardSort='day',unsub=null,unsub2=null;
+const dbReady=(async()=>{try{if(window.claude?.use)return db=await window.claude.use('db');
+  if(CFG.FIREBASE){await Promise.all(['firebase-app-compat','firebase-firestore-compat'].map(n=>new Promise((ok,ko)=>{const sc=document.createElement('script');sc.src=`https://www.gstatic.com/firebasejs/10.12.0/${n}.js`;sc.onload=ok;sc.onerror=ko;document.head.appendChild(sc)})));firebase.initializeApp(CFG.FIREBASE);return db=firebase.firestore()}}catch(e){console.warn('db',e)}return db=null})();
+async function submit(h){const d=await dbReady;if(!d)return;if(!validRow({day:dayN,path:h.path,hops:h.hops,ms:h.ms}))return;try{await d.doc(`scores/${dayN}_${pid}`).set({day:dayN,pid,name,hops:h.hops,ms:h.ms,path:h.path,ts:Date.now()})}catch(e){toast('No se pudo guardar tu puntaje')}}
+async function loadBoard(){const d=await dbReady;if(!d){rows=[];drawBoard(true);return}
+  let got=false;setTimeout(()=>{if(!got)drawBoard(true)},6000);
+  if(unsub)unsub();unsub=d.collection('scores').where('day','==',dayN).limit(500).onSnapshot(snap=>{got=true;rows=snap.docs.map(x=>x.data()).filter(validRow);drawBoard()},()=>{rows=[];drawBoard(true)});
+  if(unsub2)unsub2();unsub2=d.collection('scores').limit(1000).onSnapshot(snap=>{allRows=snap.docs.map(x=>x.data()).filter(validRow);drawBoard()},()=>{})}
+function drawBoard(offline){
+  const me=x=>x.pid===pid?' <small style="color:var(--ink2)">(tú)</small>':'',exl=x=>x.ex?' <small style="color:var(--ink2)">· ejemplo</small>':'';
+  if(boardSort==='day'){
+    let r=[...rows];
+    if(S&&S.daily&&!S.gaveUp&&!r.some(x=>x.pid===pid))r.push({pid,name,hops:S.hops,ms:S.ms});
+
+    r.sort((a,b)=>a.hops-b.hops||a.ms-b.ms);
+    $('#bCount').textContent=offline?'Sin conexión: mostrando solo tu resultado':`${rows.length} jugador${rows.length===1?'':'es'} hoy`;
+    $('#boardBody').innerHTML=`<table><thead><tr><th>#</th><th>Jugador</th><th style="text-align:right">Saltos</th><th style="text-align:right">Tiempo</th></tr></thead><tbody>${r.slice(0,25).map((x,i)=>`<tr class="${x.pid===pid?'me':''}${x.ex?' ex':''}"><td class="n"><span class="medal">${i+1}</span></td><td>${esc(x.name)}${me(x)}${exl(x)}</td><td class="v">${x.hops}</td><td class="v">${fmt(x.ms)}</td></tr>`).join('')}</tbody></table>`+(r.length<=1?'<div class="empty">Sé el primero en la tabla de hoy. Invita a alguien a competir.</div>':'');
+  }else{
+    const agg={};for(const x of allRows){const a=agg[x.pid]||(agg[x.pid]={pid:x.pid,name:x.name,n:0,hops:0,ms:0});a.n++;a.hops+=x.hops;a.ms+=x.ms;a.name=x.name}
+    let r=Object.values(agg);
+    r.sort((a,b)=>b.n-a.n||a.hops-b.hops||a.ms-b.ms);
+    $('#bCount').textContent=`${Object.keys(agg).length} jugador${Object.keys(agg).length===1?'':'es'} en total`;
+    $('#boardBody').innerHTML=`<table><thead><tr><th>#</th><th>Jugador</th><th style="text-align:right">Retos</th><th style="text-align:right">Saltos</th><th style="text-align:right">Tiempo</th></tr></thead><tbody>${r.slice(0,25).map((x,i)=>`<tr class="${x.pid===pid?'me':''}${x.ex?' ex':''}"><td class="n"><span class="medal">${i+1}</span></td><td>${esc(x.name)}${me(x)}${exl(x)}</td><td class="v">${x.n}</td><td class="v">${x.hops}</td><td class="v">${fmt(x.ms)}</td></tr>`).join('')}</tbody></table>`;
+  }
+}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+paintUser();initMoney();showIntro();
+</script>
+
+
+</body></html>
