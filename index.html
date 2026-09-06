@@ -17,7 +17,7 @@ const CFG={
   SPONSOR:null,               // {name:"Marca",url:"https://…",text:"El reto de hoy lo trae"} — reto patrocinado
   ANALYTICS_DOMAIN:"",        // Plausible: dominio, p.ej. "wikisalto.com" (o usa GA_ID)
   GA_ID:"G-G4C0N8S6JH",                   // "G-XXXXXXXXXX"
-  FIREBASE:null               // {apiKey:"",authDomain:"",projectId:""} → tabla de posiciones pública
+  FIREBASE:{apiKey:"AIzaSyD2uc_yy3m0OiYueCA9UyFI8XX6Zl0O1UU",authDomain:"wikiretos.firebaseapp.com",projectId:"wikiretos"}               // {apiKey:"",authDomain:"",projectId:""} → tabla de posiciones pública
 };
 </script>
 <style>body{margin:0}img{max-width:100%}</style>
@@ -188,6 +188,31 @@ tr.ex td{opacity:.55;font-style:italic}
 .give.plus{color:var(--goal);font-weight:700}
 footer{position:relative;z-index:1;text-align:center;font-size:12px;color:var(--ink2);padding:0 18px 30px}footer a{margin:0 6px}
 @media(max-width:560px){.goalbox .name{font-size:14px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.1;word-break:break-word}}
+
+.lnkbtn{color:var(--accent);font-weight:700;text-decoration:underline;padding:0}
+.tut .box{max-width:440px;padding:22px 22px 18px}
+.tut h3{font-size:22px;margin-bottom:4px}
+.tut .line{color:var(--body-ink);font-size:15px;margin:4px 0 14px}
+.demo{background:var(--surface2);border-radius:14px;padding:14px;position:relative;overflow:hidden}
+.demo .goal{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--ink2);margin-bottom:8px}
+.demo .goal b{color:var(--goal);font-weight:500}
+.demo .dcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;transition:opacity .25s,transform .25s}
+.demo .dcard.sw{opacity:0;transform:translateY(10px)}
+.demo .dcard h4{font-family:var(--display);font-size:20px;margin:0 0 8px}
+.demo .dl{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.demo .dl span{border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:13px;font-weight:700;background:var(--surface2);position:relative;transition:.2s}
+.demo .dl span.tap{border-color:var(--accent);background:var(--accent-soft);transform:scale(.96)}
+.demo .dl span.goal{background:var(--goal);color:var(--goal-ink);border-color:var(--goal)}
+.demo .finger{position:absolute;width:26px;height:26px;border-radius:50%;background:rgba(var(--accent-rgb),.35);border:2px solid var(--accent);pointer-events:none;transition:left .45s cubic-bezier(.2,.8,.2,1),top .45s cubic-bezier(.2,.8,.2,1),transform .15s;transform:translate(-50%,-50%);z-index:2}
+.demo .trailmini{display:flex;align-items:center;gap:4px;margin-top:10px;font-family:var(--mono);font-size:11px;color:var(--ink2);min-height:18px;flex-wrap:wrap}
+.demo .trailmini i{font-style:normal;color:var(--ink)}
+.demo .trailmini i.g{color:var(--goal);font-weight:700}
+.demo .win{position:absolute;inset:0;display:grid;place-items:center;background:rgba(var(--bg-rgb),.85);font-family:var(--display);font-weight:700;font-size:22px;opacity:0;pointer-events:none;transition:opacity .3s}
+.demo .win.on{opacity:1}
+.demo .win small{display:block;font-family:var(--body);font-weight:400;font-size:13px;color:var(--ink2);text-align:center;margin-top:4px}
+.tut .rules{display:grid;gap:6px;margin:14px 0 16px;font-size:14px;color:var(--body-ink)}
+.tut .rules div{display:flex;gap:8px;align-items:flex-start}
+.tut .rules b{font-family:var(--mono);font-size:12px;color:var(--accent);min-width:18px;padding-top:2px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 
@@ -198,7 +223,7 @@ footer{position:relative;z-index:1;text-align:center;font-size:12px;color:var(--
     <div class="hright">
       <span class="chip">racha <b id="streak">0</b></span>
       <button class="user" id="userBtn" title="Cambiar nombre"><span class="av" id="av">?</span><span id="userName">…</span></button>
-      <button class="tbtn" id="themeBtn" title="Cambiar tema"><svg id="tIco" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+      <button class="tbtn" id="helpBtn" title="Cómo se juega"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 1-1 1.7v.5"/><circle cx="12" cy="17.5" r=".6" fill="currentColor"/><circle cx="12" cy="12" r="9.5"/></svg></button><button class="tbtn" id="themeBtn" title="Cambiar tema"><svg id="tIco" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
     </div>
   </header>
 
@@ -207,12 +232,7 @@ footer{position:relative;z-index:1;text-align:center;font-size:12px;color:var(--
       <div class="eyebrow">Reto <span id="dayNum">1</span> · <span id="dateLbl"></span></div>
       <h1>¿Cuántos saltos hay entre <span class="o" id="iO"></span> y <span class="d" id="iD"></span>?</h1>
       <div class="sponsor" id="sponsor" hidden></div>
-      <p class="lede">Un juego de conexiones. Te damos un punto de partida y una meta. Tu misión: encontrar el camino que los une, saltando de palabra en palabra.</p>
-      <div class="steps">
-        <div class="step"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg></div><b>Empiezas en la salida</b>Cada tarjeta muestra un tema y una lista de temas relacionados.</div>
-        <div class="step"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 18c3-12 8-12 10-6s5 5 6-8"/></svg></div><b>Saltas tocando uno</b>Al tocarlo, pasas a ese tema y ves sus propias conexiones. Así vas armando tu ruta.</div>
-        <div class="step"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 21V4l14 5-14 5"/></svg></div><b>Llegas a la meta</b>Gana quien llega en menos saltos y menos tiempo. Compite con todos en la tabla del día.</div>
-      </div>
+      <p class="lede">Llega de un tema al otro tocando solo sus enlaces. <b>Menos saltos, mejor.</b> <button class="lnkbtn" id="howBtn">¿Cómo se juega?</button></p>
       <div class="cta"><button class="btn" id="startBtn">Empezar a saltar →</button><button class="btn ghost" id="freeBtn">Practicar (modo libre)</button><button class="btn ghost sm" id="inviteBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M12 15V3m0 0L8 7m4-4 4 4"/></svg>Invitar</button></div>
       <div class="daily" id="yday" hidden style="display:block"><span class="eyebrow">Ayer · reto <span id="ydN"></span></span><div class="path" id="ydPath" style="margin-top:8px"></div></div>
       <div class="daily"><span>Hay <b>un reto nuevo cada día</b>, igual para todo el mundo.</span><span>Próximo reto en <span class="cd" id="cdIntro">--:--:--</span></span></div>
@@ -250,7 +270,7 @@ footer{position:relative;z-index:1;text-align:center;font-size:12px;color:var(--
     <div id="bestWrap"><div class="sec"><h3>Ruta más corta posible</h3><small id="bestLbl"></small></div>
     <div class="path" id="rBest"></div></div>
     <div class="adbox" id="ad"></div>
-    <div class="plusbox" id="plusbox" hidden><span class="grow">⭐ <b>Wikiretos Plus</b>: pistas ilimitadas, modo libre sin límite y sin anuncios. <span id="plusPrice"></span></span><a class="btn sm" id="plusBtn" target="_blank" rel="noopener">Quiero Plus</a><button class="btn ghost sm" id="plusCodeBtn">Tengo un código</button></div>
+    <div class="plusbox" id="plusbox" hidden><span class="grow">⭐ <b>Wikiretos Plus</b>: pistas ilimitadas, partidas libres sin límite y sin anuncios. <span id="plusPrice"></span></span><a class="btn sm" id="plusBtn" target="_blank" rel="noopener">Quiero Plus</a><button class="btn ghost sm" id="plusCodeBtn">Tengo un código</button></div>
     <div class="card board" id="board">
       <div class="bh"><h3 id="bTitle"></h3><small id="bCount" style="color:var(--ink2);font-size:12px"></small></div>
       <div class="tabs"><button class="on" data-t="day">Reto de hoy</button><button data-t="all">General</button></div>
@@ -266,6 +286,13 @@ footer{position:relative;z-index:1;text-align:center;font-size:12px;color:var(--
 <div class="trail" id="trail" hidden><div class="trail-in"><svg id="trailSvg"></svg></div></div>
 <div class="toast" id="toast"></div>
 <div id="newDay" hidden style="position:fixed;top:0;left:0;right:0;z-index:30;background:var(--goal);color:var(--goal-ink);text-align:center;padding:10px;font-weight:700;cursor:pointer" onclick="location.reload()">Hay un reto nuevo · toca para cargarlo</div>
+<div class="modal tut" id="tut" hidden><div class="card box">
+<h3>Cómo se juega</h3>
+<p class="line">Cada día, dos temas. Llega del primero al segundo tocando solo los enlaces de cada tarjeta.</p>
+<div class="demo" id="demo"><div class="goal">DE <i id="dO"></i> → META: <b id="dD"></b></div><div class="dcard" id="dcard"></div><div class="trailmini" id="dtrail"></div><div class="finger" id="finger"></div><div class="win" id="dwin"></div></div>
+<div class="rules"><div><b>01</b>Cada tarjeta muestra un tema y sus enlaces. Toca uno para saltar a él.</div><div><b>02</b>Gana quien llega en menos saltos. El tiempo solo desempata.</div><div><b>03</b>Un reto nuevo cada día, el mismo para todos. Compite en la tabla.</div></div>
+<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" id="tutGo">Jugar →</button></div>
+</div></div>
 <div class="modal" id="modal" hidden><div class="card box"><h3>Elige tu nombre</h3><p>Así aparecerás en la tabla de cada reto. Puedes cambiarlo cuando quieras.</p><input id="nameIn" maxlength="18" placeholder="Tu nombre"><p style="margin:0 0 10px">Tu código de recuperación: <b id="myCode" style="font-family:var(--mono);color:var(--ink)"></b><br>Guárdalo para recuperar tu nombre y racha en otro dispositivo.</p><input id="codeIn" maxlength="8" placeholder="¿Tienes un código? Pégalo aquí" style="margin-bottom:12px"><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn ghost sm" id="mCancel">Cancelar</button><button class="btn sm" id="mSave">Guardar</button></div></div></div>
 
 <div class="modal" id="plusModal" hidden><div class="card box"><h3>Activar Wikiretos Plus</h3><p>Pega el código que recibiste al comprar. Queda guardado en este dispositivo.</p><input id="plusIn" maxlength="24" placeholder="Código Plus"><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn ghost sm" id="pmCancel">Cancelar</button><button class="btn sm" id="pmSave">Activar</button></div></div></div>
@@ -763,12 +790,12 @@ async function sha256(t){const b=await crypto.subtle.digest('SHA-256',new TextEn
 function openPlus(){$('#plusIn').value='';$('#plusModal').hidden=false;$('#plusIn').focus()}
 $('#plusCodeBtn').onclick=openPlus;$('#ftPlus').onclick=e=>{e.preventDefault();openPlus()};$('#pmCancel').onclick=()=>$('#plusModal').hidden=true;
 $('#plusModal').addEventListener('click',e=>{if(e.target.id==='plusModal')$('#plusModal').hidden=true});
-$('#pmSave').onclick=async()=>{const c=$('#plusIn').value.trim().toLowerCase();if(!c)return;const h=await sha256(c);if(CFG.PLUS_HASHES.includes(h)){plus=true;ls.set('plus',true);$('#plusModal').hidden=true;$('#plusbox').hidden=true;$('#ad').innerHTML='';paintHint();toast('⭐ Plus activado. ¡Gracias!');track('plus_activated')}else toast('Código no válido')};
+$('#pmSave').onclick=async()=>{const c=$('#plusIn').value.trim().toLowerCase();if(!c)return;const h=await sha256(c);if(CFG.PLUS_HASHES.includes(h)){plus=true;ls.set('plus',true);$('#plusModal').hidden=true;$('#plusbox').hidden=true;$('#ad').innerHTML='';paintHint();paintFree();toast('⭐ Plus activado. ¡Gracias!');track('plus_activated')}else toast('Código no válido')};
 
 /* ---------- monetización: donación, anuncio, patrocinio, analítica ---------- */
 function track(ev,props){try{if(window.plausible)plausible(ev,{props});if(window.gtag)gtag('event',ev,props)}catch(e){}}
 function initMoney(){
-  if(CFG.DONATE_URL){const a=`<a class="kofi" href="${CFG.DONATE_URL}" target="_blank" rel="noopener" onclick="track('donate_click')">☕ Invítame un café</a>`;$('#donate').innerHTML=a+'<span style="font-size:13px;color:var(--ink2)">Wikiretos es gratis y sin equipo detrás. Un café mantiene el reto diario.</span>';$('#donate').hidden=false;$('#ftDonate').innerHTML=`<a href="${CFG.DONATE_URL}" target="_blank" rel="noopener">Apoyar ☕</a>`}
+  if(CFG.DONATE_URL){const a=`<a class="kofi" href="${CFG.DONATE_URL}" target="_blank" rel="noopener" onclick="track('donate_click')">☕ Apoyar el juego</a>`;$('#donate').innerHTML=a+'<span style="font-size:13px;color:var(--ink2)">Wikiretos es gratis y lo hace una sola persona. Tu aporte lo mantiene vivo.</span>';$('#donate').hidden=false;$('#ftDonate').innerHTML=`<a href="${CFG.DONATE_URL}" target="_blank" rel="noopener">Apoyar el juego ☕</a>`}
   if(CFG.PLUS_URL&&!plus){$('#plusPrice').textContent=CFG.PLUS_PRICE;$('#plusBtn').href=CFG.PLUS_URL;$('#plusBtn').onclick=()=>track('plus_click');$('#plusbox').hidden=false;$('#ftPlus').hidden=false}
   if(CFG.SPONSOR){$('#sponsor').innerHTML=`${CFG.SPONSOR.text||'El reto de hoy lo trae'} <a href="${CFG.SPONSOR.url}" target="_blank" rel="noopener sponsored" onclick="track('sponsor_click')">${esc(CFG.SPONSOR.name)}</a>`;$('#sponsor').hidden=false}
   if(CFG.ADSENSE_CLIENT&&!plus){const sc=document.createElement('script');sc.async=true;sc.crossOrigin='anonymous';sc.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client='+CFG.ADSENSE_CLIENT;if(CFG.REWARDED_ADS)sc.dataset.adFrequencyHint='30s';document.head.appendChild(sc);if(CFG.REWARDED_ADS){window.adsbygoogle=window.adsbygoogle||[];adsbygoogle.push({preloadAdBreaks:'on',sound:'off',onReady:()=>{adReady=true}})}
@@ -826,7 +853,7 @@ $('#userBtn').onclick=openModal;$('#regBtn').onclick=openModal;$('#mCancel').onc
 $('#mSave').onclick=async()=>{const code=$('#codeIn').value.trim();if(code&&code!==pid){if(!/^[a-z0-9]{6,8}$/.test(code)){toast('Código inválido');return}pid=code;ls.set('pid',pid);const d=await dbReady;if(d){try{const snap=await d.collection('scores').where('pid','==',pid).get();const nm=snap.docs.map(x=>x.data()).filter(validRow);hist={};for(const x of nm)hist[x.day]={daily:true,done:true,o:x.path[0],d:x.path[x.path.length-1],path:x.path,hops:x.hops,ms:x.ms};ls.set('hist',hist);const last=nm.sort((a,b)=>b.ts-a.ts)[0];if(last&&!$('#nameIn').value.trim())$('#nameIn').value=last.name}catch(e){}}toast('Cuenta recuperada');if(!$('#nameIn').value.trim()){$('#modal').hidden=true;location.reload();return}}
   const v=$('#nameIn').value.trim().slice(0,18);if(!v)return;name=v;registered=true;ls.set('name',name);$('#modal').hidden=true;paintUser();if(S&&S.daily&&S.done)submit(S);toast('Listo, ahora juegas como '+name)};
 $('#modal').addEventListener('click',e=>{if(e.target.id==='modal')$('#modal').hidden=true});
-$('#startBtn').onclick=()=>start(true);$('#freeBtn').onclick=()=>start(false);$('#againBtn').onclick=()=>start(false);
+$('#startBtn').onclick=()=>start(true);const freePlay=()=>{if(plus)return start(false);const n=ls.get('free_'+dayN,0);if(n>=1){track('free_paywall');if(confirm('Ya jugaste tu partida libre gratis de hoy. Wikiretos Plus da partidas libres y pistas ilimitadas ('+CFG.PLUS_PRICE+'). ¿Ver cómo?'))open(CFG.PLUS_URL,'_blank');return}ls.set('free_'+dayN,n+1);start(false)};$('#freeBtn').onclick=freePlay;$('#againBtn').onclick=freePlay;
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));boardSort=b.dataset.t;drawBoard()});
 
 /* ---------- tabla (db) ---------- */
@@ -857,7 +884,26 @@ function drawBoard(offline){
 }
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-paintUser();initMoney();showIntro();
+
+/* ---------- tutorial animado ---------- */
+const DEMO=[['shakira','colombia'],['colombia','cafe'],['cafe','planta'],['planta','fotosintesis']];
+let demoT=[],demoOn=false;
+function demoCard(id,goal,tapId){const a=G[id];const ls4=a.l.filter(x=>x!==tapId).slice(0,3);const list=[...ls4.slice(0,1),tapId,...ls4.slice(1)].filter(Boolean).slice(0,4);$('#dcard').innerHTML=`<h4>${a.t}</h4><div class="dl">${list.map(x=>`<span data-id="${x}" class="${x===goal?'goal':''}">${G[x].t}</span>`).join('')}</div>`}
+function demoRun(){demoT.forEach(clearTimeout);demoT=[];if(!demoOn)return;const goal='fotosintesis';$('#dO').textContent=G.shakira.t;$('#dD').textContent=G[goal].t;$('#dwin').classList.remove('on');const trail=[];const paint=()=>$('#dtrail').innerHTML=[...trail,null].map((x,i)=>x?`<i class="${x===goal?'g':''}">${G[x].t}</i>${x===goal?'':' →'}`:'').join(' ');
+  let t=0;const at=(ms,f)=>demoT.push(setTimeout(f,t+=ms));trail.push('shakira');paint();
+  const fg=$('#finger');const moveTo=el=>{const r=el.getBoundingClientRect(),d=$('#demo').getBoundingClientRect();fg.style.left=(r.left-d.left+r.width/2)+'px';fg.style.top=(r.top-d.top+r.height/2)+'px'};
+  DEMO.forEach(([from,to],i)=>{at(i?280:0,()=>{$('#dcard').classList.remove('sw');demoCard(from,goal,to);const el=$('#dcard').querySelector(`[data-id="${to}"]`);fg.style.opacity=1;setTimeout(()=>moveTo(el),30)});at(700,()=>{const el=$('#dcard').querySelector(`[data-id="${to}"]`);if(el)el.classList.add('tap');fg.style.transform='translate(-50%,-50%) scale(.75)'});at(250,()=>{fg.style.transform='translate(-50%,-50%)';trail.push(to);paint();if(to!==goal)$('#dcard').classList.add('sw')})});
+  at(400,()=>{$('#dwin').innerHTML=`¡Meta en 4 saltos! 🏆<small>Toca los enlaces, llega a la meta. Así de simple.</small>`;$('#dwin').classList.add('on');fg.style.opacity=0});
+  at(2600,demoRun)}
+function openTut(){$('#tut').hidden=false;demoOn=true;demoRun();track('tutorial_open')}
+function closeTut(){$('#tut').hidden=true;demoOn=false;demoT.forEach(clearTimeout);ls.set('tut',1)}
+$('#howBtn').onclick=openTut;$('#helpBtn').onclick=openTut;
+$('#tutGo').onclick=()=>{closeTut();if(!$('#intro').hidden&&!(hist[dayN]&&hist[dayN].done))start(true)};
+$('#tut').addEventListener('click',e=>{if(e.target.id==='tut')closeTut()});
+/* ---------- modo libre: oculto hasta que exista Plus ---------- */
+function paintFree(){const ok=plus||!!CFG.PLUS_URL;$('#freeBtn').hidden=!ok;$('#againBtn').hidden=!ok}
+
+paintUser();initMoney();paintFree();showIntro();if(!ls.get('tut'))openTut();
 </script>
 
 
