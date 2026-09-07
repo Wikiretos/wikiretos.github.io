@@ -1,6 +1,11 @@
 <!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Wikiretos — ¿cuántos saltos hay entre dos temas? Reto diario</title>
 <meta name="description" content="Juego diario gratis: conecta dos temas saltando de enlace en enlace en el menor número de saltos. Un reto nuevo cada día, igual para todos.">
+<link rel="canonical" href="https://wikiretos.com/">
+<meta property="og:url" content="https://wikiretos.com/"><meta property="og:locale" content="es_ES"><meta property="og:site_name" content="Wikiretos">
+<meta name="keywords" content="wikiretos, juego diario, reto diario, juego de conexiones, wordle en español, juego de palabras, saltos entre temas, juego gratis">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Wikiretos","alternateName":"Wiki Retos","url":"https://wikiretos.com/","applicationCategory":"GameApplication","operatingSystem":"Any","inLanguage":"es","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Juego diario gratis en español: conecta dos temas saltando de enlace en enlace en el menor número de saltos. Un reto nuevo cada día, igual para todos.","image":"https://www.wikiretos.com/og.png"}</script>
 <meta property="og:title" content="Wikiretos — reto diario de conexiones"><meta property="og:description" content="¿Cuántos saltos hay entre dos temas? Un reto nuevo cada día. Compite con tus amigos."><meta property="og:type" content="website"><meta property="og:image" content="https://www.wikiretos.com/og.png"><meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Crect width='20' height='20' rx='5' fill='%233A4BE0'/%3E%3Ccircle cx='5' cy='15' r='2.2' fill='%23fff'/%3E%3Ccircle cx='15' cy='5' r='2.2' fill='%23FFB226'/%3E%3Cpath d='M5 15C7 8 9 8 10 10s4 3 5-5' stroke='%23fff' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
 <script>
@@ -237,6 +242,7 @@ footer{position:relative;z-index:1;text-align:center;font-size:12px;color:var(--
       <div class="cta"><button class="btn" id="startBtn">Empezar a saltar →</button><button class="btn ghost" id="freeBtn">Practicar (modo libre)</button><button class="btn ghost sm" id="inviteBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M12 15V3m0 0L8 7m4-4 4 4"/></svg>Invitar</button></div>
       <div class="daily" id="yday" hidden style="display:block"><span class="eyebrow">Ayer · reto <span id="ydN"></span></span><div class="path" id="ydPath" style="margin-top:8px"></div></div>
       <div class="daily"><span>Hay <b>un reto nuevo cada día</b>, igual para todo el mundo.</span><span>Próximo reto en <span class="cd" id="cdIntro">--:--:--</span></span></div>
+      <div class="seo" style="margin-top:22px;padding-top:16px;border-top:1px dashed var(--line);font-size:14px;color:var(--ink2);line-height:1.5"><h2 style="font-size:16px;color:var(--ink);margin-bottom:6px">¿Qué es Wikiretos?</h2><p style="margin:0">Wikiretos es un juego diario gratis en español. Cada día te damos dos temas, por ejemplo <em>Shakira</em> y <em>Fotosíntesis</em>, y tienes que llegar del uno al otro tocando solo los enlaces que conectan cada tema con otros. Gana quien lo logra en menos saltos; el tiempo solo desempata. El reto es el mismo para todo el mundo, así que puedes compararte con tus amigos y con la tabla del día. Sin descargas ni registro.</p></div>
       <div class="kpis">
         <div class="kpi"><div class="n" id="sPlayed">0</div><div class="l">retos jugados</div></div>
         <div class="kpi"><div class="n" id="sBest">–</div><div class="l">mejor marca</div></div>
