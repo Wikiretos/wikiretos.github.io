@@ -12,7 +12,7 @@ const CFG={
   PLUS_HASHES:[],             // SHA-256 (hex) de los códigos Plus que vendes; generar: sha256("codigo")
   FREE_HINTS_PER_DAY:1,       // pistas gratis en el reto diario
   REWARDED_ADS:false,         // true = la pista gratis exige ver un anuncio (AdSense H5 Games, Ad Placement API)
-  ADSENSE_CLIENT:"",          // "ca-pub-XXXXXXXXXXXXXXXX"
+  ADSENSE_CLIENT:"ca-pub-3982032910651718",          // "ca-pub-XXXXXXXXXXXXXXXX"
   ADSENSE_SLOT:"",            // id del bloque responsive
   SPONSOR:null,               // {name:"Marca",url:"https://…",text:"El reto de hoy lo trae"} — reto patrocinado
   ANALYTICS_DOMAIN:"",        // Plausible: dominio, p.ej. "wikisalto.com" (o usa GA_ID)
@@ -20,6 +20,7 @@ const CFG={
   FIREBASE:{apiKey:"AIzaSyD2uc_yy3m0OiYueCA9UyFI8XX6Zl0O1UU",authDomain:"wikiretos.firebaseapp.com",projectId:"wikiretos"}               // {apiKey:"",authDomain:"",projectId:""} → tabla de posiciones pública
 };
 </script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3982032910651718" crossorigin="anonymous"></script>
 <style>body{margin:0}img{max-width:100%}</style>
 </head><body>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Azeret+Mono:wght@400;500&display=swap">
@@ -798,7 +799,7 @@ function initMoney(){
   if(CFG.DONATE_URL){const a=`<a class="kofi" href="${CFG.DONATE_URL}" target="_blank" rel="noopener" onclick="track('donate_click')">☕ Apoyar el juego</a>`;$('#donate').innerHTML=a+'<span style="font-size:13px;color:var(--ink2)">Wikiretos es gratis y lo hace una sola persona. Tu aporte lo mantiene vivo.</span>';$('#donate').hidden=false;$('#ftDonate').innerHTML=`<a href="${CFG.DONATE_URL}" target="_blank" rel="noopener">Apoyar el juego ☕</a>`}
   if(CFG.PLUS_URL&&!plus){$('#plusPrice').textContent=CFG.PLUS_PRICE;$('#plusBtn').href=CFG.PLUS_URL;$('#plusBtn').onclick=()=>track('plus_click');$('#plusbox').hidden=false;$('#ftPlus').hidden=false}
   if(CFG.SPONSOR){$('#sponsor').innerHTML=`${CFG.SPONSOR.text||'El reto de hoy lo trae'} <a href="${CFG.SPONSOR.url}" target="_blank" rel="noopener sponsored" onclick="track('sponsor_click')">${esc(CFG.SPONSOR.name)}</a>`;$('#sponsor').hidden=false}
-  if(CFG.ADSENSE_CLIENT&&!plus){const sc=document.createElement('script');sc.async=true;sc.crossOrigin='anonymous';sc.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client='+CFG.ADSENSE_CLIENT;if(CFG.REWARDED_ADS)sc.dataset.adFrequencyHint='30s';document.head.appendChild(sc);if(CFG.REWARDED_ADS){window.adsbygoogle=window.adsbygoogle||[];adsbygoogle.push({preloadAdBreaks:'on',sound:'off',onReady:()=>{adReady=true}})}
+  if(CFG.ADSENSE_CLIENT&&CFG.ADSENSE_SLOT&&!plus){const sc=document.querySelector('script[src*="adsbygoogle"]')||document.createElement('script');if(!sc.src){sc.async=true;sc.crossOrigin='anonymous';sc.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client='+CFG.ADSENSE_CLIENT;document.head.appendChild(sc)}if(CFG.REWARDED_ADS)sc.dataset.adFrequencyHint='30s';if(CFG.REWARDED_ADS){window.adsbygoogle=window.adsbygoogle||[];adsbygoogle.push({preloadAdBreaks:'on',sound:'off',onReady:()=>{adReady=true}})}
     $('#ad').innerHTML=`<ins class="adsbygoogle" style="display:block;width:100%" data-ad-client="${CFG.ADSENSE_CLIENT}" data-ad-slot="${CFG.ADSENSE_SLOT}" data-ad-format="auto" data-full-width-responsive="true"></ins>`;sc.onload=()=>{try{(adsbygoogle=window.adsbygoogle||[]).push({})}catch(e){}}}
   if(CFG.ANALYTICS_DOMAIN){const sc=document.createElement('script');sc.defer=true;sc.dataset.domain=CFG.ANALYTICS_DOMAIN;sc.src='https://plausible.io/js/script.js';document.head.appendChild(sc)}
   if(CFG.GA_ID){const sc=document.createElement('script');sc.async=true;sc.src='https://www.googletagmanager.com/gtag/js?id='+CFG.GA_ID;document.head.appendChild(sc);window.dataLayer=window.dataLayer||[];window.gtag=function(){dataLayer.push(arguments)};gtag('js',new Date());gtag('config',CFG.GA_ID)}
